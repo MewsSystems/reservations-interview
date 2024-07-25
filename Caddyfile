@@ -1,0 +1,12 @@
+(cors) {
+	@origin header Origin {args[0]}
+	header @origin Access-Control-Allow-Origin "{args[0]}"
+	header @origin Access-Control-Allow-Methods "OPTIONS,HEAD,GET,POST,PUT,PATCH,DELETE"
+}
+
+http://localhost:4000 {
+	import cors localhost:4000
+
+	reverse_proxy /api/* localhost:6001
+	reverse_proxy localhost:6002
+}

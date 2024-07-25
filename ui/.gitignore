@@ -1,0 +1,15 @@
+# Local
+*.local
+*.log*
+
+# Dist
+node_modules
+dist/
+
+# Yarn  -  there may be something to add back in here to speed up installs, actually
+.yarn/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea

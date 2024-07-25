@@ -1,0 +1,167 @@
+using System.Data;
+using Dapper;
+using Microsoft.Data.Sqlite;
+
+class ValidationError
+{
+    public required string Message { get; set; }
+}
+
+namespace Routes
+{
+    public static class RouteExtensions
+    {
+        /// <summary>
+        /// Extension helper to return an empty collection
+        /// or the list of results
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="conn"></param>
+        /// <param name="sql"></param>
+        /// <returns></returns>
+        public static async Task<IEnumerable<T>> GetAllOrEmpty<T>(
+            this IDbConnection conn,
+            string sql
+        )
+        {
+            try
+            {
+                var rows = await conn.QueryAsync<T>(sql);
+                if (rows != null)
+                {
+                    return rows;
+                }
+            }
+            catch { }
+
+            return [];
+        }
+
+        public static void AddRoomRoutes(this WebApplication app)
+        {
+            app.MapGet(
+                "/room",
+                (SqliteConnection db) => db.GetAllOrEmpty<Room>("SELECT * FROM Rooms;")
+            );
+
+            app.MapGet(
+                "/room/{roomNumber}",
+                async (string roomNumber, SqliteConnection db) =>
+                {
+                    if (roomNumber.Length != 3)
+                    {
+                        return Results.BadRequest(
+                            new ValidationError { Message = "Invalid Room Number" }
+                        );
+                    }
+                    var roomNumberInt = -1;
+                    int.TryParse(roomNumber, out roomNumberInt);
+
+                    if (roomNumberInt < 0 || roomNumberInt > 999)
+                    {
+                        return Results.BadRequest(
+                            new ValidationError { Message = "Invalid Room Number" }
+                        );
+                    }
+
+                    var result = await db.QuerySingleOrDefaultAsync<Room>(
+                        "SELECT * FROM Rooms WHERE Number = @roomNumberInt",
+                        new { roomNumberInt }
+                    );
+                    if (result is Room room)
+                    {
+                        return Results.Ok(room);
+                    }
+
+                    return Results.NotFound();
+                }
+            );
+
+            app.MapPost(
+                "/room",
+                async (Room room, SqliteConnection db) =>
+                {
+                    if (room.Number < 0 || room.Number > 999)
+                    {
+                        var error = new ValidationError { Message = "Invalid Room Number" };
+                        return Results.BadRequest(error);
+                    }
+
+                    var newRoom = await db.QuerySingleAsync<Room>(
+                        "INSERT INTO Rooms(Number, State) Values(@Number, @State) RETURNING *",
+                        room
+                    );
+
+                    return Results.Created($"/room/{newRoom.FormatRoomNumber()}", newRoom);
+                }
+            );
+
+            app.MapDelete(
+                "/room",
+                async (int roomNumber, SqliteConnection db) =>
+                {
+                    try
+                    {
+                        var result = await db.QuerySingleAsync(
+                            "DELETE FROM Rooms WHERE Number = @roomNumber;",
+                            new { roomNumber }
+                        );
+
+                        return result == 1 ? Results.NoContent() : Results.NotFound();
+                    }
+                    catch
+                    {
+                        return Results.NotFound();
+                    }
+                }
+            );
+        }
+
+        public static void AddReservationEndpoints(this WebApplication app)
+        {
+            app.MapGet(
+                "/reservation",
+                (SqliteConnection db) =>
+                    db.GetAllOrEmpty<Reservation>("SELECT * FROM Reservations;")
+            );
+
+            app.MapPost(
+                "/reservation",
+                async (NewReservation newBookings, SqliteConnection db) =>
+                {
+                    // TODO add the reservation
+                    await Task.CompletedTask;
+
+                    return new Reservation
+                    {
+                        Id = Guid.Empty,
+                        GuestEmail = "todo@todo.io",
+                        RoomNumber = 1,
+                        Start = DateTime.MinValue,
+                        End = DateTime.MaxValue
+                    };
+                }
+            );
+
+            app.MapDelete(
+                "/reservation",
+                async (Guid reservationId, SqliteConnection db) =>
+                {
+                    try
+                    {
+                        var result = await db.QuerySingleAsync(
+                            "DELETE FROM Reservations WHERE ID = @reservationId",
+                            new { reservationId }
+                        );
+
+                        return result == 1 ? Results.NoContent() : Results.NotFound();
+                    }
+                    catch
+                    {
+                        return Results.NotFound();
+                    }
+                }
+            );
+        }
+    }
+}
