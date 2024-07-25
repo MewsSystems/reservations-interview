@@ -9,6 +9,9 @@ allows guests to book rooms.
 
 Ensure you have the following software installed:
 
+> ![NOTE]
+> Links to everything used are in the bottom Reference section
+
 - git
 - dotnet (v8)
 - node (v20)
@@ -135,3 +138,42 @@ The UI uses:
 - TanStack Router (manual code style)
 - RSBuild / RSpack (rust version of webpack)
 - Prettier (VSCode extension for formatting)
+
+## Reference
+
+- [Git](https://git-scm.com/docs)
+- [.NET](https://learn.microsoft.com/en-us/dotnet/)
+- [dotnet cli](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet)
+- [C# Language Reference](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/)
+- [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [React Docs](https://react.dev/)
+- [Nodejs Docs](https://nodejs.org/en)
+- [SQLite](https://sqlite.org/docs.html)
+- [Dapper](https://www.learndapper.com/)
+- [Caddy](https://caddyserver.com/docs/)
+- [Grommet Docs](https://v2.grommet.io/)
+- [Grommet Storybook](https://storybook.grommet.io/?path=/story/all--all)
+- [TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)
+- [Yarn](https://yarnpkg.com/)
+- [Concurrently](https://github.com/open-cli-tools/concurrently)
+- [RSBuild](https://rsbuild.dev/)
+- [Homebrew](https://brew.sh/)
+- [fnm](https://github.com/Schniz/fnm)
+
+<details>
+
+<summary>VSCode Extensions</summary>
+
+We purposefully kept most/all editor config outside of this repo,
+but if you happen to use VSCode we recommend these extensions for
+this repo:
+
+- [Todo Tree](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.todo-tree)
+- [C#](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
+- [CSharpier](https://marketplace.visualstudio.com/items?itemName=csharpier.csharpier-vscode)
+- [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
+- [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
+- [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens)
+- [Pretty Typescript Errors](https://marketplace.visualstudio.com/items?itemName=yoavbls.pretty-ts-errors)
+
+</details>
