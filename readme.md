@@ -38,8 +38,14 @@ node --version # expect at least v20
 corepack enable
 which yarn
 
-# if that doesn't work you can install yarn globally with npm
+# if that doesn't work OOTB, try installing corepack
+# npm i -g corepack
+# corepack enable
+# which yarn
+
+# if that _also_ didn't work, you can install yarn directly
 # npm i -g yarn
+# See this for more details: https://yarnpkg.com/corepack
 
 brew install caddy
 ```
