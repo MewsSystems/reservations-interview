@@ -2,7 +2,7 @@
 
 ## Reservation Management System
 
-This repo is a barebones Reservation Management system that
+This repo is a barebones Reservation Management system that (almost)
 allows guests to book rooms.
 
 ## Running the App
@@ -10,7 +10,7 @@ allows guests to book rooms.
 Ensure you have the following software installed:
 
 > [!NOTE]
-> Links to everything used are in the bottom Reference section
+> Links to everything used are in the bottom [Reference](#References) section
 
 - git
 - dotnet (v8)
@@ -139,26 +139,40 @@ The UI uses:
 - RSBuild / RSpack (rust version of webpack)
 - Prettier (VSCode extension for formatting)
 
-## Reference
+## References
+
+**CLI Tools**
+
+Things that mostly exist at build time or in the terminal.
 
 - [Git](https://git-scm.com/docs)
-- [.NET](https://learn.microsoft.com/en-us/dotnet/)
 - [dotnet cli](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet)
-- [C# Language Reference](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/)
-- [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
-- [React Docs](https://react.dev/)
-- [Nodejs Docs](https://nodejs.org/en)
-- [SQLite](https://sqlite.org/docs.html)
-- [Dapper](https://www.learndapper.com/)
 - [Caddy](https://caddyserver.com/docs/)
-- [Grommet Docs](https://v2.grommet.io/)
-- [Grommet Storybook](https://storybook.grommet.io/?path=/story/all--all)
-- [TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)
+- [Homebrew](https://brew.sh/)
+- [fnm](https://github.com/Schniz/fnm)
 - [Yarn](https://yarnpkg.com/)
 - [Concurrently](https://github.com/open-cli-tools/concurrently)
 - [RSBuild](https://rsbuild.dev/)
-- [Homebrew](https://brew.sh/)
-- [fnm](https://github.com/Schniz/fnm)
+
+**Foundations**
+
+Languages, frameworks, runtimes, and storage engines.
+
+- [C# Language Reference](https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/)
+- [Typescript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)
+- [.NET](https://learn.microsoft.com/en-us/dotnet/)
+- [Nodejs Docs](https://nodejs.org/en)
+- [SQLite](https://sqlite.org/docs.html)
+
+**Libraries**
+
+Libraries that have APIs you consume in the codebase.
+
+- [React Docs](https://react.dev/)
+- [Dapper](https://www.learndapper.com/)
+- [Grommet Docs](https://v2.grommet.io/)
+- [Grommet Storybook](https://storybook.grommet.io/?path=/story/all--all)
+- [TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)
 
 <details>
 
