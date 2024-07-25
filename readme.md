@@ -9,7 +9,7 @@ allows guests to book rooms.
 
 Ensure you have the following software installed:
 
-> ![NOTE]
+> [!NOTE]
 > Links to everything used are in the bottom Reference section
 
 - git
