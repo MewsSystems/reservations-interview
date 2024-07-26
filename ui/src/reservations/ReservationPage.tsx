@@ -124,13 +124,6 @@ function BookingDetailsModal({
     setDateRange(event.value);
   }
 
-  // very bad validation
-  const isValid =
-    email.length > 3 &&
-    email.includes("@") &&
-    Array.isArray(dateRange) &&
-    dateRange.length === 2;
-
   function handleClose() {
     resetForm();
     onClose();
@@ -202,13 +195,7 @@ function BookingDetailsModal({
             label="Close"
           />
 
-          <Button
-            onClick={handleSubmit}
-            primary
-            active
-            disabled={!isValid}
-            label="Book"
-          />
+          <Button onClick={handleSubmit} primary active label="Book" />
         </Box>
       </Box>
     </Layer>
