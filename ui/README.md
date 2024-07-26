@@ -1,29 +1,13 @@
-# Rsbuild Project
+# Reservation UI
 
 ## Setup
 
 Install the dependencies:
 
 ```bash
-pnpm install
+yarn install
 ```
 
 ## Get Started
 
-Start the dev server:
-
-```bash
-pnpm dev
-```
-
-Build the app for production:
-
-```bash
-pnpm build
-```
-
-Preview the production build locally:
-
-```bash
-pnpm preview
-```
+Use the top level start script to run both the api and ui together.
