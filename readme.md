@@ -121,6 +121,12 @@ You can use the `GET /room` to check if the DB has these saved:
 
 </details>
 
+## Backlog
+
+In `/backlog` you will find 'tickets' to pick up to submit, please indicate in the PR
+which tickets are closed or partially completed. The tickets use 'must' and 'should' to distinguish
+between minimum and ideal experiences.
+
 ## API
 
 The API is a C# .NET 8 simple web api, living in api/
