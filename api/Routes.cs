@@ -117,7 +117,7 @@ namespace Routes
             );
 
             app.MapDelete(
-                "/room",
+                "/room/{roomNumber}",
                 async (int roomNumber, SqliteConnection db) =>
                 {
                     try
@@ -190,21 +190,23 @@ namespace Routes
             );
 
             app.MapDelete(
-                "/reservation",
+                "/reservation/{reservationId}",
                 async (Guid reservationId, SqliteConnection db) =>
                 {
                     try
                     {
-                        var result = await db.QuerySingleAsync(
-                            "DELETE FROM Reservations WHERE ID = @reservationId",
+                        var result = await db.QuerySingleOrDefaultAsync(
+                            "DELETE FROM Reservations WHERE ID = @reservationId;",
                             new { reservationId }
                         );
 
-                        return result == 1 ? Results.NoContent() : Results.NotFound();
+                        return result == 1 ? Results.NotFound() : Results.NoContent();
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        return Results.NotFound();
+                        Console.WriteLine("An error occured while deleting a room");
+                        Console.WriteLine(ex.ToString());
+                        return Results.BadRequest();
                     }
                 }
             );
