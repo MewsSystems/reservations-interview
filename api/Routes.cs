@@ -155,6 +155,33 @@ namespace Routes
                     db.GetAllOrEmpty<DbReservation>("SELECT * FROM Reservations;")
             );
 
+            app.MapGet(
+                "/reservation/{reservationId}",
+                async (Guid reservationId, SqliteConnection db) =>
+                {
+                    var result = await db.QuerySingleOrDefaultAsync<DbReservation>(
+                        "SELECT * FROM Reservations WHERE Id = @reservationId;",
+                        new { reservationId = reservationId.ToString() }
+                    );
+
+                    if (result == null)
+                    {
+                        return Results.NotFound();
+                    }
+
+                    return Results.Ok(
+                        new Reservation
+                        {
+                            Id = Guid.Parse(result.Id),
+                            GuestEmail = result.GuestEmail,
+                            RoomNumber = result.RoomNumber,
+                            Start = result.Start,
+                            End = result.End
+                        }
+                    );
+                }
+            );
+
             app.MapPost(
                 "/reservation",
                 async (NewReservation newBooking, SqliteConnection db) =>
