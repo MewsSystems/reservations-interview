@@ -1,5 +1,6 @@
 using System.Data;
 using Dapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.Sqlite;
 
 class ValidationError
@@ -35,6 +36,25 @@ namespace Routes
             catch { }
 
             return [];
+        }
+
+        /// <summary>
+        /// Ensures this is a staff member, if not returns true and 403
+        /// </summary>
+        /// <param name="request"></param>
+        public static bool IsNotStaff(HttpRequest request, out IResult? result)
+        {
+            // TODO explore UseAuthentication
+            request.Cookies.TryGetValue("access", out string? accessValue);
+
+            if (accessValue == null || accessValue == "0")
+            {
+                result = Results.StatusCode(403);
+                return true;
+            }
+
+            result = null;
+            return false;
         }
 
         public static void AddRoomRoutes(this WebApplication app)
@@ -125,7 +145,7 @@ namespace Routes
             );
         }
 
-        public static void AddReservationEndpoints(this WebApplication app)
+        public static void AddReservationRoutes(this WebApplication app)
         {
             app.MapGet(
                 "/reservation",
@@ -186,6 +206,54 @@ namespace Routes
                     }
                 }
             );
+        }
+
+        public static void AddStaffRoutes(this WebApplication app)
+        {
+            app.MapGet(
+                "/staff/login",
+                (
+                    IConfiguration config,
+                    [FromHeader(Name = "X-Staff-Code")] string accessCode,
+                    HttpResponse response
+                ) =>
+                {
+                    var configuredSecret = config.GetValue<string>("staffAccessCode");
+                    if (configuredSecret != accessCode)
+                    {
+                        // don't set cookie, don't indicate anything
+                        return Results.NoContent();
+                    }
+                    response.Cookies.Append(
+                        "access",
+                        "1",
+                        new CookieOptions
+                        // TODO evaluate cookie options & auth mechanism for best security practices
+                        {
+                            IsEssential = true,
+                            SameSite = SameSiteMode.Strict,
+                            HttpOnly = true,
+                            Secure = false
+                        }
+                    );
+                    return Results.NoContent();
+                }
+            );
+
+            app.MapGet(
+                "/staff/check",
+                (HttpRequest request) =>
+                {
+                    if (IsNotStaff(request, out IResult? result))
+                    {
+                        return result;
+                    }
+
+                    return Results.Ok("Authorized");
+                }
+            );
+
+            // TODO set up staff routes
         }
     }
 }

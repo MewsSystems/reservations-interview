@@ -6,13 +6,15 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 {
+    var Services = builder.Services;
     var connectionString =
         builder.Configuration.GetConnectionString("ReservationsDb")
         ?? "Data Source=reservations.db;Cache=Shared";
-    builder.Services.AddCors();
-    builder.Services.AddScoped(_ => new SqliteConnection(connectionString));
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+
+    Services.AddCors();
+    Services.AddScoped(_ => new SqliteConnection(connectionString));
+    Services.AddEndpointsApiExplorer();
+    Services.AddSwaggerGen();
 }
 
 var app = builder.Build();
@@ -25,19 +27,21 @@ var app = builder.Build();
     }
     catch (Exception ex)
     {
-        Console.WriteLine("Failed to setup the database, aboirting");
+        Console.WriteLine("Failed to setup the database, aborting");
         Console.WriteLine(ex.ToString());
         Environment.Exit(1);
         return;
     }
 
-    app.UsePathBase("/api").UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UsePathBase("/api")
+        .UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader())
+        .UseSwagger()
+        .UseSwaggerUI();
 
     app.AddRoomRoutes();
     app.AddGuestRoutes();
-    app.AddReservationEndpoints();
+    app.AddReservationRoutes();
+    app.AddStaffRoutes();
 }
 
 app.Run();
