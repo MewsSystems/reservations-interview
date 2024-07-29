@@ -122,16 +122,18 @@ namespace Routes
                 {
                     try
                     {
-                        var result = await db.QuerySingleAsync(
+                        var result = await db.QuerySingleOrDefaultAsync(
                             "DELETE FROM Rooms WHERE Number = @roomNumber;",
                             new { roomNumber }
                         );
 
-                        return result == 1 ? Results.NoContent() : Results.NotFound();
+                        return result == 1 ? Results.NotFound() : Results.NoContent();
                     }
-                    catch
+                    catch (Exception ex)
                     {
-                        return Results.NotFound();
+                        Console.WriteLine("An error occured while deleting a room");
+                        Console.WriteLine(ex.ToString());
+                        return Results.BadRequest();
                     }
                 }
             );
