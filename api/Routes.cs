@@ -264,7 +264,7 @@ namespace Routes
                             IsEssential = true,
                             SameSite = SameSiteMode.Strict,
                             HttpOnly = true,
-                            Secure = false
+                            Secure = true
                         }
                     );
                     return Results.NoContent();
