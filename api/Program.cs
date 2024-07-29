@@ -36,6 +36,7 @@ var app = builder.Build();
     app.UseSwaggerUI();
 
     app.AddRoomRoutes();
+    app.AddGuestRoutes();
     app.AddReservationEndpoints();
 }
 

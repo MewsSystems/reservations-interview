@@ -117,29 +117,53 @@ namespace Routes
             );
         }
 
+        public static void AddGuestRoutes(this WebApplication app)
+        {
+            app.MapGet(
+                "/guest",
+                (SqliteConnection db) => db.GetAllOrEmpty<Guest>("SELECT * FROM Guests;")
+            );
+        }
+
         public static void AddReservationEndpoints(this WebApplication app)
         {
             app.MapGet(
                 "/reservation",
                 (SqliteConnection db) =>
-                    db.GetAllOrEmpty<Reservation>("SELECT * FROM Reservations;")
+                    db.GetAllOrEmpty<DbReservation>("SELECT * FROM Reservations;")
             );
 
             app.MapPost(
                 "/reservation",
-                async (NewReservation newBookings, SqliteConnection db) =>
+                async (NewReservation newBooking, SqliteConnection db) =>
                 {
-                    // TODO add the reservation
-                    await Task.CompletedTask;
-
-                    return new Reservation
+                    var newReservation = new Reservation
                     {
-                        Id = Guid.Empty,
-                        GuestEmail = "todo@todo.io",
-                        RoomNumber = 1,
-                        Start = DateTime.MinValue,
-                        End = DateTime.MaxValue
+                        Id = Guid.NewGuid(),
+                        GuestEmail = newBooking.GuestEmail,
+                        RoomNumber = newBooking.RoomNumber,
+                        Start = newBooking.Start,
+                        End = newBooking.End
                     };
+
+                    try
+                    {
+                        // ?? EnsureGuest
+                        // TODO impl persistence
+
+                        await Task.CompletedTask;
+                        return Results.Created(
+                            $"/reservation/${newReservation.Id}",
+                            newReservation
+                        );
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("An error occured when trying to book a reservation:");
+                        Console.WriteLine(ex.ToString());
+
+                        return Results.BadRequest("Invalid reservation");
+                    }
                 }
             );
 

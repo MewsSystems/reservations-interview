@@ -1,3 +1,6 @@
+using System.Data;
+using Dapper;
+
 public class Guest
 {
     /// <summary>
@@ -24,5 +27,28 @@ public class Guest
     public string GetLastName()
     {
         return Surname ?? Name;
+    }
+
+    /// <summary>
+    /// Ensures the Guest exists in the db, uses email as name
+    /// </summary>
+    /// <param name="email"></param>
+    /// <returns></returns>
+    public static async Task EnsureGuest(string email, IDbConnection db)
+    {
+        try
+        {
+            await db.QuerySingleAsync<Guest>(
+                "INSERT INTO Guests(Email, Name) Values(@Email, @Name) RETURNING *",
+                // TODO accept a proper name
+                // TODO accept an optional surname
+                new { Email = email, Name = email }
+            );
+        }
+        catch
+        {
+            // TODO reimplement this without abusing try-catch
+            // guest already exists, everything is OK
+        }
     }
 }

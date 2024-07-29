@@ -5,12 +5,23 @@ import {
   toIsoStr,
 } from "../utils/datetime";
 import { ChangeEvent, useState } from "react";
+import { postJson } from "../utils/api";
+import { SuccessToast } from "../components/SuccessToast";
 
 interface NewReservation {
   RoomNumber: number;
   GuestEmail: string;
   Start: ISO8601String;
   End: ISO8601String;
+}
+
+/** The type the API returns */
+interface ReservationAPI {
+  Id: string;
+  RoomNumber: number;
+  GuestEmail: string;
+  Start: string;
+  End: string;
 }
 
 function bookRoom(booking: NewReservation) {
@@ -21,17 +32,19 @@ function bookRoom(booking: NewReservation) {
     End: toIsoStr(booking.End),
   };
 
-  // TODO add the reservation
-
+  // TODO impl reserving a room
+  // ?? postJson?
   return Promise.resolve(newReservation);
 }
 
 export function ReservationPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedRoomNumber, setSelectedRoomNumber] = useState(-1);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   function onClose() {
     setShowModal(false);
+    setShowSuccess(true);
   }
 
   function onSubmit(booking: NewReservation) {
@@ -42,6 +55,10 @@ export function ReservationPage() {
     setSelectedRoomNumber(roomNumber);
     setShowModal(true);
   };
+
+  function handleCloseToast() {
+    setShowSuccess(false);
+  }
 
   return (
     <>
@@ -94,6 +111,11 @@ export function ReservationPage() {
         show={showModal}
         onClose={onClose}
         onSubmit={onSubmit}
+      />
+      <SuccessToast
+        show={showSuccess}
+        onClose={handleCloseToast}
+        message="We received your booking!"
       />
     </>
   );
