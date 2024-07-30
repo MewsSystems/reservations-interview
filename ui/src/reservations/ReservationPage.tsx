@@ -1,12 +1,15 @@
-import { Box, Button, DateInput, Grid, Layer, Text, TextInput } from "grommet";
 import {
   fromDateStringToIso,
   ISO8601String,
   toIsoStr,
 } from "../utils/datetime";
-import { ChangeEvent, useState } from "react";
+import { ChangeEvent, useEffect, useState } from "react";
 import { postJson } from "../utils/api";
-import { SuccessToast } from "../components/SuccessToast";
+import { useShowToast } from "../components/SuccessToast";
+import { RoomCard } from "./RoomCard";
+import Datepicker, { DateValueType } from "react-tailwindcss-datepicker";
+
+function noop() {}
 
 interface NewReservation {
   RoomNumber: number;
@@ -40,15 +43,16 @@ function bookRoom(booking: NewReservation) {
 export function ReservationPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedRoomNumber, setSelectedRoomNumber] = useState(-1);
-  const [showSuccess, setShowSuccess] = useState(false);
+
+  const showToast = useShowToast("We have received your booking!");
 
   function onClose() {
     setShowModal(false);
-    setShowSuccess(true);
+    setSelectedRoomNumber(-1);
   }
 
   function onSubmit(booking: NewReservation) {
-    return bookRoom(booking).then(onClose);
+    return bookRoom(booking).then(onClose).then(showToast);
   }
 
   const createClickHandler = (roomNumber: number) => () => {
@@ -56,75 +60,46 @@ export function ReservationPage() {
     setShowModal(true);
   };
 
-  function handleCloseToast() {
-    setShowSuccess(false);
-  }
-
   return (
-    <>
-      <Box>
-        <Text size="4xl">Rooms</Text>
-      </Box>
-      <Grid justify="start" columns="1/4" gap="small">
-        <Box
-          hoverIndicator
-          pad="small"
-          border="all"
+    <div>
+      <h1 className="text-4xl text-secondary mb-6">Rooms</h1>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 pl-2 gap-4">
+        <RoomCard
+          imgSrc="/bed.png"
+          roomNumber={1}
           onClick={createClickHandler(1)}
-        >
-          <Text>Room#001</Text>
-          <img src="/bed.png" width={250}></img>
-        </Box>
-
-        <Box
-          hoverIndicator
-          pad="small"
-          border="all"
+        />
+        <RoomCard
+          imgSrc="/bed.png"
+          roomNumber={2}
           onClick={createClickHandler(2)}
-        >
-          <Text>Room#002</Text>
-          <img src="/bed.png" width={250}></img>
-        </Box>
-
-        <Box
-          hoverIndicator
-          pad="small"
-          border="all"
+        />
+        <RoomCard
+          imgSrc="/bed.png"
+          roomNumber={3}
           onClick={createClickHandler(3)}
-        >
-          <Text>Room#003</Text>
-          <img src="/bed.png" width={250}></img>
-        </Box>
-
-        <Box
-          hoverIndicator
-          pad="small"
-          border="all"
+        />
+        <RoomCard
+          imgSrc="/bed.png"
+          roomNumber={4}
           onClick={createClickHandler(4)}
-        >
-          <Text>Room#004</Text>
-          <img src="/bed.png" width={250}></img>
-        </Box>
-      </Grid>
+        />
+      </div>
       <BookingDetailsModal
-        roomNumber={selectedRoomNumber}
         show={showModal}
-        onClose={onClose}
+        roomNumber={selectedRoomNumber}
         onSubmit={onSubmit}
+        onClose={onClose}
       />
-      <SuccessToast
-        show={showSuccess}
-        onClose={handleCloseToast}
-        message="We received your booking!"
-      />
-    </>
+    </div>
   );
 }
 
 interface BookingDetailsModalProps {
   roomNumber: number;
   show: boolean;
-  onSubmit: (booking: NewReservation) => Promise<void>;
+  onSubmit: (booking: NewReservation) => Promise<any>;
   onClose: () => void;
 }
 
@@ -136,14 +111,29 @@ function BookingDetailsModal({
 }: BookingDetailsModalProps) {
   const formattedRoomNumber = String(roomNumber).padStart(3, "0");
 
+  useEffect(() => {
+    if (typeof ReservationDialog === "undefined") {
+      return;
+    }
+
+    if (show) {
+      ReservationDialog.showModal();
+    } else {
+      ReservationDialog.close();
+    }
+  }, [show]);
+
   const [email, setEmail] = useState("");
   function onEmailChange(event: ChangeEvent<HTMLInputElement>) {
     setEmail(event.target.value);
   }
 
-  const [dateRange, setDateRange] = useState("");
-  function onDateRangeChange(event: any) {
-    setDateRange(event.value);
+  const [dateRange, setDateRange] = useState<DateValueType>({
+    startDate: null,
+    endDate: null,
+  });
+  function onDateRangeChange(newDateRange: DateValueType) {
+    setDateRange(newDateRange);
   }
 
   function handleClose() {
@@ -153,17 +143,21 @@ function BookingDetailsModal({
 
   function resetForm() {
     setEmail("");
-    setDateRange("");
+    setDateRange({ startDate: null, endDate: null });
   }
 
   function handleSubmit() {
-    const [start, end] = dateRange;
+    if (dateRange?.startDate == null || dateRange?.endDate == null) {
+      return;
+    }
+
+    const { startDate, endDate } = dateRange;
 
     onSubmit({
       RoomNumber: roomNumber,
       GuestEmail: email,
-      Start: fromDateStringToIso(start),
-      End: fromDateStringToIso(end),
+      Start: fromDateStringToIso(startDate),
+      End: fromDateStringToIso(endDate),
     }).then(resetForm);
   }
 
@@ -172,54 +166,62 @@ function BookingDetailsModal({
   }
 
   return (
-    <Layer
-      id="reservation"
-      onClickOutside={handleClose}
-      onEsc={handleClose}
-      position="center"
+    <dialog
+      id="ReservationDialog"
+      className="modal modal-bottom md:modal-middle"
+      onClose={handleClose}
     >
-      <Box pad="medium" gap="small" width="large">
-        <Text size="2xl">Booking for Room#{formattedRoomNumber}</Text>
-
-        <Text size="lg" weight="bold">
-          What is your email?
-        </Text>
-
-        <TextInput
-          value={email}
-          onChange={onEmailChange}
-          aria-label="Input Email"
-        />
-
-        <Text size="lg" weight="bold">
-          When is your stay?
-        </Text>
-        <DateInput
-          id="booking_period"
-          name="booking"
-          defaultValue={[]}
-          format="dd/mm/yyyy-dd/mm/yyyy"
-          inline
-          value={dateRange}
-          onChange={onDateRangeChange}
-        />
-        <Box
-          as="footer"
-          align="center"
-          justify="end"
-          gap="medium"
-          direction="row"
+      <div className="modal-box relative px-6 md:w-[900px] md:max-w-[900px] h-[675px]">
+        <button
+          className="btn btn-sm btn-circle btn-ghost absolute right-4 md:right-2 top-2"
+          onClick={handleClose}
         >
-          <Button
-            onClick={handleClose}
-            color="dark-3"
-            type="reset"
-            label="Close"
+          ✕
+        </button>
+        <h3 className="font-bold text-lg mb-6">
+          Booking for Room#{formattedRoomNumber}
+        </h3>
+        <label className="input input-bordered flex items-center gap-2 mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            className="h-4 w-4 opacity-70"
+          >
+            <path d="M2.5 3A1.5 1.5 0 0 0 1 4.5v.793c.026.009.051.02.076.032L7.674 8.51c.206.1.446.1.652 0l6.598-3.185A.755.755 0 0 1 15 5.293V4.5A1.5 1.5 0 0 0 13.5 3h-11Z" />
+            <path d="M15 6.954 8.978 9.86a2.25 2.25 0 0 1-1.956 0L1 6.954V11.5A1.5 1.5 0 0 0 2.5 13h11a1.5 1.5 0 0 0 1.5-1.5V6.954Z" />
+          </svg>
+          <input
+            type="email"
+            value={email}
+            onChange={onEmailChange}
+            className="grow"
+            placeholder="Email"
           />
-
-          <Button onClick={handleSubmit} primary active label="Book" />
-        </Box>
-      </Box>
-    </Layer>
+        </label>
+        <p className="mb-2">Booking Dates</p>
+        <div className="input input-bordered flex items-center gap-2">
+          <Datepicker
+            value={dateRange}
+            onChange={onDateRangeChange}
+            inputClassName="w-full"
+          />
+        </div>
+        <div className="modal-action absolute right-4 bottom-4 p-2">
+          <button
+            className="btn bg-secondary hover:bg-accent text-neutral hover:text-secondary"
+            onClick={handleSubmit}
+          >
+            Book
+          </button>
+        </div>
+      </div>
+      <form method="dialog" className="modal-backdrop" onSubmit={handleClose}>
+        <button>close</button>
+      </form>
+    </dialog>
   );
 }
+
+/** Once BookingDetailsModal renders, this global exists as the <dialog> has an id */
+declare const ReservationDialog: HTMLDialogElement;

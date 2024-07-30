@@ -1,8 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Card, CardBody, CardFooter, Grid, Heading, Text } from "grommet";
-
-/** No Operation, grommet looks at onClick to add styles */
-function noop() {}
 
 function handleLogin() {
   // TODO have a staff view
@@ -11,25 +7,27 @@ function handleLogin() {
 
 export function LandingPage() {
   return (
-    <Grid columns={"1/2"} gap={"2em"}>
-      <Card onClick={handleLogin} background="graph-1">
-        <CardBody>
-          <Heading>Login</Heading>
-        </CardBody>
-        <CardFooter>
-          <Text size="small">Staff View</Text>
-        </CardFooter>
-      </Card>
-      <Link to="/reservations" preload="intent">
-        <Card onClick={noop} background="graph-3">
-          <CardBody>
-            <Heading>Reserve a Room</Heading>
-          </CardBody>
-          <CardFooter>
-            <Text size="small">Guest View</Text>
-          </CardFooter>
-        </Card>
-      </Link>
-    </Grid>
+    <div className="flex flex-row h-full place-content-evenly gap-4">
+      <div
+        className="grow card bg-primary text-primary-content shadow-lg hover:cursor-pointer group"
+        onClick={handleLogin}
+      >
+        <div className="card-body mx-auto">
+          <h2 className="card-title text-4xl group-hover:text-secondary">
+            Login
+          </h2>
+        </div>
+      </div>
+
+      <div className="grow card card-bordered bg-accent text-primary-content group">
+        <Link to="/reservations" preload="intent" className="block">
+          <div className="card-body">
+            <h2 className="card-title text-4xl mx-auto group-hover:text-secondary">
+              Reserve
+            </h2>
+          </div>
+        </Link>
+      </div>
+    </div>
   );
 }

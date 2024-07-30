@@ -1,18 +1,36 @@
-import { Box, Grommet, Header, Heading } from "grommet";
-import { LEFT_MEDIUM, THEME } from "./theme";
-import { Outlet } from "@tanstack/react-router";
+import { Link, Outlet, useRouter } from "@tanstack/react-router";
 
 export const Layout = () => {
+  const { history } = useRouter();
+
+  const hasHistory = window.history.length > 2; // ??
+
+  function goBack() {
+    history.go(-1);
+  }
+
   return (
-    <Grommet theme={THEME} full="min">
-      <Header background="brand" pad={LEFT_MEDIUM}>
-        <Heading level={1} size="small">
-          Reservations @ Mewstel
-        </Heading>
-      </Header>
-      <Box pad="large" height="full">
+    <div>
+      <div className="navbar bg-accent text-primary-content">
+        <span
+          title="Go Home"
+          className="text-2xl underline underline-offset-4 hover:text-secondary"
+        >
+          <Link to="/">Reservations @ Mewstel</Link>
+        </span>
+        {hasHistory && (
+          <button
+            title="Go Back"
+            className="ml-6 btn btn-ghost hover:text-secondary"
+            onClick={goBack}
+          >
+            &lt;
+          </button>
+        )}
+      </div>
+      <div className="p-6">
         <Outlet />
-      </Box>
-    </Grommet>
+      </div>
+    </div>
   );
 };

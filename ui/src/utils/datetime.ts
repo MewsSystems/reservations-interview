@@ -20,8 +20,9 @@ function fromDate(date: Date): ISO8601String {
 }
 
 /** Uses Date.parse to get our branded type */
-export function fromDateStringToIso(dateTimeString: string): ISO8601String {
-  const parsedTimestamp = Date.parse(dateTimeString);
+export function fromDateStringToIso(dateTime: string | Date): ISO8601String {
+  const parsedTimestamp =
+    typeof dateTime === "string" ? Date.parse(dateTime) : dateTime.valueOf();
   if (Number.isNaN(parsedTimestamp)) {
     throw new Error("Invalid date time string.");
   }

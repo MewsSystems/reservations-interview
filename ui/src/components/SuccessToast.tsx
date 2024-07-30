@@ -1,44 +1,39 @@
-import { Notification } from "grommet";
-import { Checkmark } from "grommet-icons";
+import { useCallback } from "react";
+import { toast } from "sonner";
+
+const useCloseToast = (toastId: string | number) =>
+  useCallback(() => toast.dismiss(toastId), [toastId]);
 
 export interface SuccessToastProps {
-  show: boolean;
-  onClose: () => void;
-  /** Defaults to 'Success */
-  title?: string;
-  /** Defaults to 'Operation successful!'
-   * Highly recommended to provide a contextual message
-   */
-  message?: string;
+  toastId: string | number;
+  message: string;
 }
 
-const DEFAULT_TITLE = "Success";
-const DEFAULT_MESSAGE = "Operation successful!";
-
-/** A successful toast with defaults.
- * Highly recommended to set a custom message
- */
-export function SuccessToast({
-  show,
-  onClose,
-  title,
-  message,
-}: SuccessToastProps) {
-  if (!show) {
-    return null;
-  }
-
-  const resolvedTitle = title || DEFAULT_TITLE;
-  const resolvedMessage = message || DEFAULT_MESSAGE;
+/** A successful toast */
+function SuccessToast({ toastId, message }: SuccessToastProps) {
+  const closeToast = useCloseToast(toastId);
 
   return (
-    <Notification
-      toast
-      title={resolvedTitle}
-      message={resolvedMessage}
-      onClose={onClose}
-      status="normal"
-      icon={<Checkmark />}
-    />
+    <div
+      title="Click to dismiss"
+      className="toast toast-bottom toast-end cursor-pointer"
+      onClick={closeToast}
+    >
+      <div className="alert alert-success">
+        <span>{message}</span>
+      </div>
+    </div>
+  );
+}
+
+const DEFAULT_TOAST_DURATION_MS = 2_250;
+
+export function useShowToast(message: string) {
+  return useCallback(
+    () =>
+      toast.custom((t) => <SuccessToast toastId={t} message={message} />, {
+        duration: DEFAULT_TOAST_DURATION_MS,
+      }),
+    [message]
   );
 }
