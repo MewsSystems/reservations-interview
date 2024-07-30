@@ -1,6 +1,5 @@
 using Db;
 using Microsoft.Data.Sqlite;
-using Routes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,6 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.GetConnectionString("ReservationsDb")
         ?? "Data Source=reservations.db;Cache=Shared";
 
+    Services.AddMvc(opt =>
+    {
+        opt.EnableEndpointRouting = false;
+    });
     Services.AddCors();
     Services.AddScoped(_ => new SqliteConnection(connectionString));
     Services.AddEndpointsApiExplorer();
@@ -34,14 +37,10 @@ var app = builder.Build();
     }
 
     app.UsePathBase("/api")
+        .UseMvc()
         .UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader())
         .UseSwagger()
         .UseSwaggerUI();
-
-    app.AddRoomRoutes();
-    app.AddGuestRoutes();
-    app.AddReservationRoutes();
-    app.AddStaffRoutes();
 }
 
 app.Run();

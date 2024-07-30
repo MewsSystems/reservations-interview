@@ -37,4 +37,15 @@ public class NewReservation
 public class DbReservation : NewReservation
 {
     public required string Id { get; set; }
+
+    public Reservation ToDomain()
+    {
+        return new Reservation
+        {
+            Id = Guid.Parse(Id),
+            GuestEmail = GuestEmail,
+            Start = Start,
+            End = End
+        };
+    }
 }
