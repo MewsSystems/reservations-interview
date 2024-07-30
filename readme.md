@@ -146,7 +146,8 @@ The UI uses:
 
 - TypeScript (Types!)
 - React (rendering library)
-- Grommet (component library)
+- Daisy (component library)
+- Tailwind (css utilities)
 - TanStack Router (manual code style)
 - RSBuild / RSpack (rust version of webpack)
 - Prettier (VSCode extension for formatting)
@@ -182,8 +183,10 @@ Libraries that have APIs you consume in the codebase.
 
 - [React Docs](https://react.dev/)
 - [Dapper](https://www.learndapper.com/)
-- [Grommet Docs](https://v2.grommet.io/)
-- [Grommet Storybook](https://storybook.grommet.io/?path=/story/all--all)
+- [Daisy UI](https://daisyui.com/docs/use/)
+- [Tailwind](https://tailwindcss.com/docs/hover-focus-and-other-states)
+- [Sonner](https://sonner.emilkowal.ski/styling#tailwind-css)
+  - See our wrapper in [SuccessToast](./ui/src/components/SuccessToast.tsx)
 - [TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)
 
 <details>
@@ -197,6 +200,7 @@ this repo:
 - [Todo Tree](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.todo-tree)
 - [C#](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
 - [CSharpier](https://marketplace.visualstudio.com/items?itemName=csharpier.csharpier-vscode)
+- [Tailwind](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss)
 - [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 - [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
 - [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens)
