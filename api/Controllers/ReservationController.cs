@@ -44,7 +44,9 @@ namespace Controllers
         }
 
         [HttpPost, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Reservation>> BookReservation(NewReservation newBooking)
+        public async Task<ActionResult<Reservation>> BookReservation(
+            [FromBody] NewReservation newBooking
+        )
         {
             var newReservation = new Reservation
             {

@@ -13,7 +13,9 @@ public class Reservation : NewReservation
             RoomNumber = RoomNumber,
             GuestEmail = GuestEmail,
             Start = Start,
-            End = End
+            End = End,
+            CheckedIn = CheckedIn,
+            CheckedOut = CheckedOut
         };
     }
 }
@@ -29,6 +31,8 @@ public class NewReservation
 
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
+    public bool CheckedIn { get; set; }
+    public bool CheckedOut { get; set; }
 }
 
 /// <summary>
@@ -45,7 +49,9 @@ public class DbReservation : NewReservation
             Id = Guid.Parse(Id),
             GuestEmail = GuestEmail,
             Start = Start,
-            End = End
+            End = End,
+            CheckedIn = CheckedIn,
+            CheckedOut = CheckedOut
         };
     }
 }

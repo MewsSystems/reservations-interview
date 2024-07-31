@@ -55,7 +55,7 @@ namespace Controllers
         }
 
         [HttpPost, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Room>> CreateRoom(Room newRoom)
+        public async Task<ActionResult<Room>> CreateRoom([FromBody] Room newRoom)
         {
             if (newRoom.Number < 1 || newRoom.Number > 999)
             {

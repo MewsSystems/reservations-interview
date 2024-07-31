@@ -43,6 +43,8 @@ namespace Db
                 {nameof(Reservation.RoomNumber)} INT NOT NULL,
                 {nameof(Reservation.Start)} INT NOT NULL,
                 {nameof(Reservation.End)} INT NOT NULL,
+                {nameof(Reservation.CheckedIn)} INT NOT NULL DEFAULT FALSE,
+                {nameof(Reservation.CheckedOut)} INT NOT NULL DEFAULT FALSE,
                 FOREIGN KEY ({nameof(Reservation.GuestEmail)})
                   REFERENCES Guests ({nameof(Guest.Email)}),
                 FOREIGN KEY ({nameof(Reservation.RoomNumber)})
