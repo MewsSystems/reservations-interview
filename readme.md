@@ -26,8 +26,8 @@ If you are on a mac, get homebrew so you can quickly install everything:
 
 ```sh
 brew install git
-brew install dotnet
-dotnet --list-sdks # tested with sdk 8.0.104
+brew install dotnet-sdk
+dotnet --list-sdks # tested with sdk 8.0.104 / 8.0.303
 
 # I recommend fnm to manage node
 brew install fnm
@@ -36,18 +36,93 @@ node --version # expect at least v20
 
 # We recommend using corepack
 corepack enable
-which yarn
 
 # if that doesn't work OOTB, try installing corepack
-# npm i -g corepack
-# corepack enable
+#   npm i -g corepack
+#   corepack enable
 # which yarn
 
 # if that _also_ didn't work, you can install yarn directly
-# npm i -g yarn
+#   npm i -g yarn
 # See this for more details: https://yarnpkg.com/corepack
 
+which yarn # ensure you have the yarn binary
+
 brew install caddy
+```
+
+</details>
+
+<details>
+
+<summary>Windows Instructions</summary>
+
+If you are on a windows, get chocolatey so you can quickly install everything:
+
+```ps1
+choco install git
+choco install dotnet
+dotnet --list-sdks # tested with sdk 8.0.104 / 8.0.303
+
+# I recommend fnm to manage node
+choco install fnm
+fnm install 20
+node --version # expect at least v20
+
+# We recommend using corepack
+corepack enable
+
+# if that doesn't work OOTB, try installing corepack
+#   npm i -g corepack
+#   corepack enable
+
+# if that _also_ didn't work, you can install yarn directly
+#   npm i -g yarn
+# See this for more details: https://yarnpkg.com/corepack
+
+where yarn # ensure you have the yarn binary
+
+choco install caddy
+```
+
+</details>
+
+<details>
+
+<summary>GNU/Linux Instructions</summary>
+
+If you are on GNU/Linux, use your preferred package manager to quickly install everything:
+
+```sh
+# Using apt for Ubuntu, but you get the idea
+
+apt install git
+
+# Will include dependencies: https://learn.microsoft.com/en-us/dotnet/core/install/linux-ubuntu-install?tabs=dotnet8&pivots=os-linux-ubuntu-2404#dependencies
+apt install dotnet-sdk-8.0
+dotnet --list-sdks # tested with sdk 8.0.104 / 8.0.303
+
+# I recommend fnm to manage node
+# Instructions here: https://github.com/Schniz/fnm#installation
+# See if your package manage has fnm by searching for it, or fallback on the bash/zsh/fish script
+curl -fsSL https://fnm.vercel.app/install | bash
+fnm install 20
+node --version # expect at least v20
+
+# We recommend using corepack
+corepack enable
+
+# if that doesn't work OOTB, try installing corepack
+#   npm i -g corepack
+#   corepack enable
+
+# if that _also_ didn't work, you can install yarn directly
+#   npm i -g yarn
+# See this for more details: https://yarnpkg.com/corepack
+
+which yarn # ensure you have yarn
+
+apt install caddy
 ```
 
 </details>
@@ -162,6 +237,7 @@ Things that mostly exist at build time or in the terminal.
 - [dotnet cli](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet)
 - [Caddy](https://caddyserver.com/docs/)
 - [Homebrew](https://brew.sh/)
+- [Chocolatey](https://community.chocolatey.org/)
 - [fnm](https://github.com/Schniz/fnm)
 - [Yarn](https://yarnpkg.com/)
 - [Concurrently](https://github.com/open-cli-tools/concurrently)
