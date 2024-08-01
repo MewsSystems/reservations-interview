@@ -1,6 +1,8 @@
 _**delete this line. This is a pull request template, places delete or replace everything that is italicized.**_
 
-## _full name_
+_Replace the title with your full name, matching the first section below_
+
+# _full name_
 
 _replace this with a brief overview of the work and delivery_
 
