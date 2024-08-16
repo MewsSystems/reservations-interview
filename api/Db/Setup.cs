@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Models;
 
 namespace Db
 {

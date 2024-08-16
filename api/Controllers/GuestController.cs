@@ -1,28 +1,23 @@
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
+using Models;
+using Repositories;
 
 namespace Controllers
 {
     [Tags("Guests"), Route("guest")]
     public class GuestController : Controller
     {
-        private SqliteConnection db { get; set; }
+        private GuestRepository _repo;
 
-        public GuestController(SqliteConnection sqliteDb)
+        public GuestController(GuestRepository guestRepository)
         {
-            db = sqliteDb;
+            _repo = guestRepository;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Guest>> GetGuests()
         {
-            var guests = await db.QueryAsync<Room>("SELECT * FROM Guests;");
-
-            if (guests == null)
-            {
-                return Json(Enumerable.Empty<Guest>());
-            }
+            var guests = await _repo.GetGuests();
 
             return Json(guests);
         }

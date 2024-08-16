@@ -1,70 +1,62 @@
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
+using Models;
+using Models.Errors;
+using Repositories;
 
 namespace Controllers
 {
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller
     {
-        private SqliteConnection db { get; set; }
+        private ReservationRepository _repo { get; set; }
 
-        public ReservationController(SqliteConnection sqliteDb)
+        public ReservationController(ReservationRepository reservationRepository)
         {
-            db = sqliteDb;
+            _repo = reservationRepository;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await db.QueryAsync<DbReservation>("SELECT * FROM Reservations;");
+            var reservations = await _repo.GetReservations();
 
-            if (reservations == null)
-            {
-                return Json(Enumerable.Empty<Reservation>());
-            }
-
-            return Json(reservations.Select(r => r.ToDomain()));
+            return Json(reservations);
         }
 
         [HttpGet, Produces("application/json"), Route("{reservationId}")]
         public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
         {
-            var reservation = await db.QueryFirstOrDefaultAsync<DbReservation>(
-                "SELECT * FROM Reservations WHERE Id = @reservationIdStr;",
-                new { reservationIdStr = reservationId.ToString() }
-            );
-
-            if (reservation == null)
+            try
+            {
+                var reservation = await _repo.GetReservation(reservationId);
+                return Json(reservation);
+            }
+            catch (NotFoundException)
             {
                 return NotFound();
             }
-
-            return Json(reservation.ToDomain());
         }
 
+        /// <summary>
+        /// Create a new reservation, to generate the GUID ID on the server, send an Empty GUID (all 0s)
+        /// </summary>
+        /// <param name="newBooking"></param>
+        /// <returns></returns>
         [HttpPost, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> BookReservation(
-            [FromBody] NewReservation newBooking
+            [FromBody] Reservation newBooking
         )
         {
-            var newReservation = new Reservation
+            // Provide a real ID if one is not provided
+            if (newBooking.Id == Guid.Empty)
             {
-                Id = Guid.NewGuid(),
-                GuestEmail = newBooking.GuestEmail,
-                RoomNumber = newBooking.RoomNumber,
-                Start = newBooking.Start,
-                End = newBooking.End
-            };
+                newBooking.Id = Guid.NewGuid();
+            }
 
             try
             {
-                // TODO FK?
-                // TODO var persistedReservation = ...
-                await Task.CompletedTask;
-
-                // TODO change to persisted
-                return Created($"/reservation/${newReservation.Id}", newReservation);
+                var createdReservation = await _repo.CreateReservation(newBooking);
+                return Created($"/reservation/${createdReservation.Id}", createdReservation);
             }
             catch (Exception ex)
             {
@@ -78,12 +70,9 @@ namespace Controllers
         [HttpDelete, Produces("application/json"), Route("{reservationId}")]
         public async Task<IActionResult> DeleteReservation(Guid reservationId)
         {
-            var result = await db.QuerySingleOrDefaultAsync(
-                "DELETE FROM Reservations WHERE Id = @reservationIdStr;",
-                new { reservationIdStr = reservationId.ToString() }
-            );
+            var result = await _repo.DeleteReservation(reservationId);
 
-            return result == 1 ? NotFound() : NoContent();
+            return result ? NoContent() : NotFound();
         }
     }
 }

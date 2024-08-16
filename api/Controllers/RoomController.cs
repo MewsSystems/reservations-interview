@@ -1,23 +1,24 @@
-using Dapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.Sqlite;
+using Models;
+using Models.Errors;
+using Repositories;
 
 namespace Controllers
 {
     [Tags("Rooms"), Route("room")]
     public class RoomController : Controller
     {
-        private SqliteConnection db { get; set; }
+        private RoomRepository _repo { get; set; }
 
-        public RoomController(SqliteConnection sqliteDb)
+        public RoomController(RoomRepository roomRepository)
         {
-            db = sqliteDb;
+            _repo = roomRepository;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Room>> GetRooms()
         {
-            var rooms = await db.QueryAsync<Room>("SELECT * FROM Rooms;");
+            var rooms = await _repo.GetRooms();
 
             if (rooms == null)
             {
@@ -35,39 +36,22 @@ namespace Controllers
                 return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
             }
 
-            var success = int.TryParse(roomNumber, out int roomNumberInt);
-            if (!success)
+            try
             {
-                return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
+                var room = await _repo.GetRoom(roomNumber);
+
+                return Json(room);
             }
-
-            var room = await db.QueryFirstOrDefaultAsync<Room>(
-                "SELECT * FROM Rooms WHERE Number = @roomNumberInt;",
-                new { roomNumberInt }
-            );
-
-            if (room == null)
+            catch (NotFoundException)
             {
                 return NotFound();
             }
-
-            return Json(room);
         }
 
         [HttpPost, Produces("application/json"), Route("")]
         public async Task<ActionResult<Room>> CreateRoom([FromBody] Room newRoom)
         {
-            if (newRoom.Number < 1 || newRoom.Number > 999)
-            {
-                return BadRequest(
-                    "Invalid room ID - format is ###, ex 001 / 002 / 101, from 1 - 999"
-                );
-            }
-
-            var createdRoom = await db.QuerySingleAsync<Room>(
-                "INSERT INTO Rooms(Number, State) Values(@Number, @State) RETURNING *",
-                newRoom
-            );
+            var createdRoom = await _repo.CreateRoom(newRoom);
 
             if (createdRoom == null)
             {
@@ -85,18 +69,9 @@ namespace Controllers
                 return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
             }
 
-            var success = int.TryParse(roomNumber, out int roomNumberInt);
-            if (!success)
-            {
-                return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
-            }
+            var deleted = await _repo.DeleteRoom(roomNumber);
 
-            var result = await db.QuerySingleOrDefaultAsync(
-                "DELETE FROM Rooms WHERE Number = @roomNumberInt;",
-                new { roomNumberInt }
-            );
-
-            return result == 1 ? NotFound() : NoContent();
+            return deleted ? NoContent() : NotFound();
         }
     }
 }
