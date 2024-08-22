@@ -15,7 +15,6 @@ Ensure you have the following software installed:
 - git
 - dotnet (v8)
 - node (v20)
-- yarn (v4.3.1)
 - caddy
 
 <details>
@@ -33,20 +32,6 @@ dotnet --list-sdks # tested with sdk 8.0.104 / 8.0.303
 brew install fnm
 fnm install 20
 node --version # expect at least v20
-
-# We recommend using corepack
-corepack enable
-
-# if that doesn't work OOTB, try installing corepack
-#   npm i -g corepack
-#   corepack enable
-# which yarn
-
-# if that _also_ didn't work, you can install yarn directly
-#   npm i -g yarn
-# See this for more details: https://yarnpkg.com/corepack
-
-which yarn # ensure you have the yarn binary
 
 brew install caddy
 ```
@@ -68,19 +53,6 @@ dotnet --list-sdks # tested with sdk 8.0.104 / 8.0.303
 choco install fnm
 fnm install 20
 node --version # expect at least v20
-
-# We recommend using corepack
-corepack enable
-
-# if that doesn't work OOTB, try installing corepack
-#   npm i -g corepack
-#   corepack enable
-
-# if that _also_ didn't work, you can install yarn directly
-#   npm i -g yarn
-# See this for more details: https://yarnpkg.com/corepack
-
-where yarn # ensure you have the yarn binary
 
 choco install caddy
 ```
@@ -109,19 +81,6 @@ curl -fsSL https://fnm.vercel.app/install | bash
 fnm install 20
 node --version # expect at least v20
 
-# We recommend using corepack
-corepack enable
-
-# if that doesn't work OOTB, try installing corepack
-#   npm i -g corepack
-#   corepack enable
-
-# if that _also_ didn't work, you can install yarn directly
-#   npm i -g yarn
-# See this for more details: https://yarnpkg.com/corepack
-
-which yarn # ensure you have yarn
-
 apt install caddy
 ```
 
@@ -134,7 +93,7 @@ cd api
 dotnet build
 
 cd ../ui
-yarn install
+npm install
 
 cd ..
 caddy adapt
@@ -172,23 +131,23 @@ You can use the `GET /room` to check if the DB has these saved:
 ```json
 [
   {
-    "number": 1,
+    "number": "001",
     "state": 0
   },
   {
-    "number": 2,
+    "number": "002",
     "state": 0
   },
   {
-    "number": 3,
+    "number": "003",
     "state": 0
   },
   {
-    "number": 4,
+    "number": "004",
     "state": 0
   },
   {
-    "number": 5,
+    "number": "005",
     "state": 0
   }
 ]
@@ -221,9 +180,14 @@ The UI uses:
 
 - TypeScript (Types!)
 - React (rendering library)
-- Daisy (component library)
-- Tailwind (css utilities)
+- Radix UI (headless, accessible component library)
+- Radis Theme (more built out components)
+- Styled Components (css-in-js library)
+- Sonner (toast notifications)
 - TanStack Router (manual code style)
+- TanStack Query (automatic remote data caching)
+- Ky (http client)
+- Zod (schema validation)
 - RSBuild / RSpack (rust version of webpack)
 - Prettier (VSCode extension for formatting)
 
@@ -239,7 +203,6 @@ Things that mostly exist at build time or in the terminal.
 - [Homebrew](https://brew.sh/)
 - [Chocolatey](https://community.chocolatey.org/)
 - [fnm](https://github.com/Schniz/fnm)
-- [Yarn](https://yarnpkg.com/)
 - [Concurrently](https://github.com/open-cli-tools/concurrently)
 - [RSBuild](https://rsbuild.dev/)
 
@@ -259,11 +222,15 @@ Libraries that have APIs you consume in the codebase.
 
 - [React Docs](https://react.dev/)
 - [Dapper](https://www.learndapper.com/)
-- [Daisy UI](https://daisyui.com/docs/use/)
-- [Tailwind](https://tailwindcss.com/docs/hover-focus-and-other-states)
-- [Sonner](https://sonner.emilkowal.ski/styling#tailwind-css)
-  - See our wrapper in [SuccessToast](./ui/src/components/SuccessToast.tsx)
 - [TanStack Router](https://tanstack.com/router/latest/docs/framework/react/overview)
+- [TanStack Query](https://tanstack.com/query/latest/docs/react/overview)
+- [Ky](https://github.com/sindresorhus/ky)
+- [Zod](https://zod.dev/)
+- [Styled Components](https://styled-components.com/)
+- [Radix UI](https://www.radix-ui.com/)
+- [Radix UI Theme](https://www.radix-ui.com/themes/docs/overview/getting-started)
+- [Sonner](https://sonner.emilkowal.ski/)
+  - See our wrapper in [SuccessToast](./ui/src/components/SuccessToast.tsx)
 
 <details>
 
@@ -276,7 +243,6 @@ this repo:
 - [Todo Tree](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.todo-tree)
 - [C#](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
 - [CSharpier](https://marketplace.visualstudio.com/items?itemName=csharpier.csharpier-vscode)
-- [Tailwind](https://marketplace.visualstudio.com/items?itemName=bradlc.vscode-tailwindcss)
 - [Prettier](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode)
 - [ESLint](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint)
 - [Error Lens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens)

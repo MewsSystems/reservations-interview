@@ -1,17 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "@radix-ui/themes/styles.css";
 
-/* Fix for scroll bar w/ modals
-*   See: https://github.com/saadeghi/daisyui/issues/3040#issuecomment-2250530354
-*/
-:root:has(
-    :is(
-        .modal-open,
-        .modal:target,
-        .modal-toggle:checked + .modal,
-        .modal[open]
-      )
-  ) {
-  scrollbar-gutter: unset;
+/* mini reset */
+html,
+body {
+  margin: 0;
+  padding: 0;
 }

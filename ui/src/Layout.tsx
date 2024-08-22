@@ -1,36 +1,27 @@
-import { Link, Outlet, useRouter } from "@tanstack/react-router";
+import { Box, Text } from "@radix-ui/themes";
+import { Link, Outlet } from "@tanstack/react-router";
+import React from "react";
+
+const TOP_BAR_ACCENT_BACKGROUND: React.CSSProperties = {
+  backgroundColor: "var(--accent-10)",
+};
+
+const UNDERLINE_HEADING: React.CSSProperties = {
+  textDecoration: "underline",
+  textDecorationColor: "var(--accent-2)",
+};
 
 export const Layout = () => {
-  const { history } = useRouter();
-
-  const hasHistory = window.history.length > 2; // ??
-
-  function goBack() {
-    history.go(-1);
-  }
-
   return (
-    <div>
-      <div className="navbar bg-accent text-primary-content">
-        <span
-          title="Go Home"
-          className="text-2xl underline underline-offset-4 hover:text-secondary"
-        >
-          <Link to="/">Reservations @ Mewstel</Link>
-        </span>
-        {hasHistory && (
-          <button
-            title="Go Back"
-            className="ml-6 btn btn-ghost hover:text-secondary"
-            onClick={goBack}
-          >
-            &lt;
-          </button>
-        )}
-      </div>
-      <div className="p-6">
-        <Outlet />
-      </div>
-    </div>
+    <Box p="0" m="0">
+      <Box width="100%" style={TOP_BAR_ACCENT_BACKGROUND} py="4" pl="4">
+        <Link title="Go Home" to="/">
+          <Text size="8" style={UNDERLINE_HEADING}>
+            Reservations @ Mewstel
+          </Text>
+        </Link>
+      </Box>
+      <Outlet />
+    </Box>
   );
 };
