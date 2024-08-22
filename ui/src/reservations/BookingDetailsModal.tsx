@@ -12,12 +12,12 @@ import styled from "styled-components";
 
 interface BookingDetailsModalProps {
   roomNumber: string;
-  onSubmit: (booking: NewReservation) => Promise<any>;
+  onSubmit: (booking: NewReservation) => void;
 }
 
 interface BookingFormProps {
   roomNumber: string;
-  onSubmit: (booking: NewReservation) => Promise<any>;
+  onSubmit: (booking: NewReservation) => void;
 }
 
 /** Must be inside a Dialog.Root that container Dialog.Triggers elsewhere */
