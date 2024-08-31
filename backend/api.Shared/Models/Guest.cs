@@ -1,4 +1,4 @@
-namespace Models
+namespace api.Shared.Models
 {
     public class Guest
     {

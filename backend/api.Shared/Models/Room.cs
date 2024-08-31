@@ -1,6 +1,7 @@
-using Models.Errors;
+using api.Shared.Constants;
+using api.Shared.Models.Errors;
 
-namespace Models
+namespace api.Shared.Models
 {
     /// <summary>
     /// Domain Model of a Room
@@ -39,12 +40,5 @@ namespace Models
 
             return roomNumberInt;
         }
-    }
-
-    public enum State
-    {
-        Ready = 0,
-        Occupied = 1,
-        Dirty = 2
     }
 }

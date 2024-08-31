@@ -1,9 +1,14 @@
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Threading.Tasks;
+using api.Shared.Constants;
+using api.Shared.Extensions;
+using api.Shared.Models;
+using api.Shared.Models.Errors;
 using Dapper;
-using Models;
-using Models.Errors;
 
-namespace Repositories
+namespace api.Shared.Repositories
 {
     public class RoomRepository
     {
@@ -11,7 +16,7 @@ namespace Repositories
 
         public RoomRepository(IDbConnection db)
         {
-            _db = db;
+            _db = db.ThrowIfNull(nameof(IDbConnection));
         }
 
         /// <summary>

@@ -1,4 +1,6 @@
-namespace Models.Errors
+using System;
+
+namespace api.Shared.Models.Errors
 {
     public class NotFoundException : Exception
     {

@@ -1,8 +1,8 @@
+using api.Shared.Models;
+using api.Shared.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Models;
-using Repositories;
 
-namespace Controllers
+namespace api.Controllers
 {
     [Tags("Guests"), Route("guest")]
     public class GuestController : Controller

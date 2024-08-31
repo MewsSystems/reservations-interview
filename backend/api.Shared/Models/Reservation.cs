@@ -1,4 +1,6 @@
-namespace Models
+using System;
+
+namespace api.Shared.Models
 {
     public class Reservation
     {

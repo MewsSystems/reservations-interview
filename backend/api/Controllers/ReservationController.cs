@@ -1,9 +1,9 @@
+using api.Shared.Models;
+using api.Shared.Models.Errors;
+using api.Shared.Repositories;
 using Microsoft.AspNetCore.Mvc;
-using Models;
-using Models.Errors;
-using Repositories;
 
-namespace Controllers
+namespace api.Controllers
 {
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller

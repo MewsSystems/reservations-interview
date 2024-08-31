@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 
-namespace Controllers
+namespace api.Controllers
 {
     [Route("staff")]
     public class StaffController : Controller

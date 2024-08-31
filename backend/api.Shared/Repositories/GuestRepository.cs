@@ -1,9 +1,12 @@
+using System.Collections.Generic;
 using System.Data;
+using System.Threading.Tasks;
+using api.Shared.Extensions;
+using api.Shared.Models;
+using api.Shared.Models.Errors;
 using Dapper;
-using Models;
-using Models.Errors;
 
-namespace Repositories
+namespace api.Shared.Repositories
 {
     public class GuestRepository
     {
@@ -11,7 +14,7 @@ namespace Repositories
 
         public GuestRepository(IDbConnection db)
         {
-            _db = db;
+            _db = db.ThrowIfNull(nameof(IDbConnection));
         }
 
         public async Task<IEnumerable<Guest>> GetGuests()

@@ -1,24 +1,26 @@
+using api.Shared.Models;
 using Dapper;
-using Microsoft.Data.Sqlite;
-using Models;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Data;
 
-namespace Db
+namespace api.Shared.Db
 {
     public static class Setup
     {
         /// <summary>
         /// Ensures the DB is available and the requried tables are made
         /// </summary>
-        public static async void EnsureDb(IServiceScope scope)
+        public static void EnsureDb(IServiceProvider provider)
         {
-            using var db = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
+            using var db = provider.GetRequiredService<IDbConnection>();
 
             // SQLite WAL (write-ahead log) go brrrr
-            await db.ExecuteAsync("PRAGMA journal_mode = wal;");
+            var executed = db.Execute("PRAGMA journal_mode = wal;");
             // SQLite does not enforce FKs by default
-            await db.ExecuteAsync("PRAGMA foreign_keys = ON;");
+            executed = db.Execute("PRAGMA foreign_keys = ON;");
 
-            await db.ExecuteAsync(
+            executed = db.Execute(
                 $@"
               CREATE TABLE IF NOT EXISTS Guests (
                 {nameof(Guest.Email)} TEXT PRIMARY KEY NOT NULL,
@@ -27,7 +29,7 @@ namespace Db
             "
             );
 
-            await db.ExecuteAsync(
+            executed = db.Execute(
                 $@"
               CREATE TABLE IF NOT Exists Rooms (
                 {nameof(Room.Number)} INT PRIMARY KEY NOT NULL,
@@ -36,7 +38,7 @@ namespace Db
             "
             );
 
-            await db.ExecuteAsync(
+            executed = db.Execute(
                 $@"
               CREATE TABLE IF NOT EXISTS Reservations (
                 {nameof(Reservation.Id)} TEXT PRIMARY KEY NOT NULL,
@@ -53,6 +55,9 @@ namespace Db
               );
             "
             );
+
+            var tables = db.Query<string>("SELECT name FROM sqlite_master WHERE type='table';");
+
         }
     }
 }
