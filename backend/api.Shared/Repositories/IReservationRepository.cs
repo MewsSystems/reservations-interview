@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using System;
 using api.Shared.Models.DB;
 using System.Collections.Generic;
+using System.Data;
 
 namespace api.Shared.Repositories
 {
@@ -18,8 +19,10 @@ namespace api.Shared.Repositories
         /// <exception cref="NotFoundException"></exception>
         Task<Reservation> GetReservation(Guid reservationId);
 
-        Task<Reservation> CreateReservation(Reservation newReservation);
+        Task<Reservation> CreateReservation(Reservation newReservation, IDbTransaction transaction);
 
         Task<bool> DeleteReservation(Guid reservationId);
+
+        Task<IEnumerable<Reservation>> GetStaffReservations();
     }
 }

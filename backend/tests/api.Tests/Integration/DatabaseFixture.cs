@@ -7,8 +7,10 @@ namespace api.Tests.Integration
 {
     public class DatabaseFixture : IDisposable
     {
-        private readonly IServiceProvider _serviceProvider;
-        public IDbConnection DbConnection { get; }
+        private Lazy<IDbConnection> _lazyDbConnection => new(_serviceProvider.GetRequiredService<IDbConnection>());
+        public IDbConnection DbConnection => _lazyDbConnection.Value;
+
+        protected readonly IServiceProvider _serviceProvider;    
 
         public DatabaseFixture()
         {
@@ -17,16 +19,13 @@ namespace api.Tests.Integration
             services.AddReservationServices("DataSource=file::memory:?cache=shared");
             _serviceProvider = services.BuildServiceProvider();
 
-            DbConnection = _serviceProvider.GetRequiredService<IDbConnection>();
-            DbConnection.Open();
-
+            using var dbConnection = _serviceProvider.GetRequiredService<IDbConnection>();
+            // Ensure the database schema is created and setup
             Setup.EnsureDb(_serviceProvider);
         }
 
         public void Dispose()
         {
-            DbConnection.Close();
-            DbConnection.Dispose();
             (_serviceProvider as IDisposable)?.Dispose();
         }
     }

@@ -20,7 +20,19 @@ namespace api.Shared.Repositories
 
         public async Task<IEnumerable<Reservation>> GetReservations()
         {
-            var reservations = await _db.QueryAsync<Models.DB.Reservation>("SELECT * FROM Reservations");
+            var reservations = await _db.QueryAsync<Reservation>("SELECT * FROM Reservations");
+
+            if (reservations == null)
+            {
+                return [];
+            }
+
+            return reservations;
+        }
+
+        public async Task<IEnumerable<Reservation>> GetStaffReservations()
+        {
+            var reservations = await _db.QueryAsync<Reservation>("SELECT * FROM Reservations WHERE Start >= DATE('now')");
 
             if (reservations == null)
             {
@@ -33,7 +45,7 @@ namespace api.Shared.Repositories
         /// <inheritdoc/>
         public async Task<Reservation> GetReservation(Guid reservationId)
         {
-            var reservation = await _db.QueryFirstOrDefaultAsync<Models.DB.Reservation>(
+            var reservation = await _db.QueryFirstOrDefaultAsync<Reservation>(
                 "SELECT * FROM Reservations WHERE Id = @reservationIdStr;",
                 new { reservationIdStr = reservationId.ToString() }
             );
@@ -47,13 +59,32 @@ namespace api.Shared.Repositories
             return reservation;
         }
 
-        public async Task<Reservation> CreateReservation(Reservation newReservation)
+        public async Task<Reservation> CreateReservation(Reservation newReservation, IDbTransaction transaction)
         {
-            return await _db.QuerySingleAsync<Reservation>(
+            var count = await _db.ExecuteScalarAsync<int>(@"
+                    SELECT COUNT(*)
+                    FROM Reservations
+                    WHERE RoomNumber = @roomNumber
+                      AND Start < @newEnd
+                      AND End > @newStart", new
+            {
+                roomNumber = newReservation.RoomNumber,
+                newStart = newReservation.Start,
+                newEnd = newReservation.End
+            }, transaction);
+
+            if (count > 0)
+            {
+                throw new ReservationUnavailableException(newReservation.RoomNumber, newReservation.Start, newReservation.End);
+            }
+
+            var reservation = await _db.QuerySingleAsync<Reservation>(
                 @"INSERT INTO Reservations(Id, GuestEmail, RoomNumber, Start, End, CheckedIn, CheckedOut)
                     Values(@Id, @GuestEmail, @RoomNumber, @Start, @End, @CheckedIn, @CheckedOut) RETURNING *",
-                newReservation
+                newReservation,
+                transaction
             );
+            return reservation;
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)

@@ -1,59 +1,66 @@
 ﻿using api.Shared.Models.Errors;
-using api.Shared.Models;
 using api.Shared.Repositories;
 using api.Shared.Models.DB;
+using Microsoft.Data.Sqlite;
 
 namespace api.Tests.Integration
 {
-    [Collection(nameof(DatabaseCollection))]
-    public class ReservationRepositoryTests
+    [Collection(nameof(DatabaseSeedCollection))]
+    public abstract class SequentialTestBase
     {
-        private readonly ReservationRepository _reservationRepository;
-        private readonly DatabaseFixture _fixture;
+        public string[] Guests => _fixture.Guests;
+        public int[] Rooms => _fixture.Rooms;
 
-        public ReservationRepositoryTests(DatabaseFixture fixture)
+        protected readonly ReservationRepository _reservationRepository;
+        protected readonly DatabaseSeedFixture _fixture;
+
+        public SequentialTestBase(DatabaseSeedFixture fixture)
         {
             _fixture = fixture;
             _reservationRepository = new ReservationRepository(fixture.DbConnection);
+        }
+    }
+
+    public class GetReservationsTest : SequentialTestBase
+    {
+        public GetReservationsTest(DatabaseSeedFixture fixture) : base(fixture)
+        {
         }
 
         [Fact]
         public async Task GetReservations_ShouldReturnAllReservations()
         {
             // Arrange
-            var reservation1 = new Reservation
+            var reservation = new Reservation
             {
                 Id = Guid.NewGuid().ToString(),
-                RoomNumber = 101,
-                GuestEmail = "guest1@example.com",
-                Start = DateTime.UtcNow,
-                End = DateTime.UtcNow.AddDays(2),
-                CheckedIn = false,
-                CheckedOut = false
-            };
-            var reservation2 = new Reservation
-            {
-                Id = Guid.NewGuid().ToString(),
-                RoomNumber = 102,
-                GuestEmail = "guest2@example.com",
+                RoomNumber = Rooms[0],
+                GuestEmail = Guests[0],
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(3),
                 CheckedIn = false,
                 CheckedOut = false
             };
 
-            /* TBA
-             await _reservationRepository.CreateReservation(reservation1);
-             await _reservationRepository.CreateReservation(reservation2);
+            if (_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
+            using var trans = _fixture.DbConnection.BeginTransaction();
+            await _reservationRepository.CreateReservation(reservation, trans);
 
             // Act
             var reservations = await _reservationRepository.GetReservations();
 
             // Assert
-            Assert.Contains(reservations, r => r.Id == reservation1.Id);
-            Assert.Contains(reservations, r => r.Id == reservation2.Id);
-            */
+            Assert.Contains(reservations, r => r.Id == reservation.Id);
+
             await Task.CompletedTask;
+        }
+    }
+
+    public class GetReservation_WhenReservationExists : SequentialTestBase
+    {
+        public GetReservation_WhenReservationExists(DatabaseSeedFixture fixture) : base(fixture)
+        {
         }
 
         [Fact]
@@ -63,38 +70,54 @@ namespace api.Tests.Integration
             var reservation = new Reservation
             {
                 Id = Guid.NewGuid().ToString(),
-                RoomNumber = 101,
-                GuestEmail = "guest@example.com",
+                RoomNumber = Rooms[0],
+                GuestEmail = Guests[0],
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(2),
                 CheckedIn = false,
                 CheckedOut = false
             };
 
-            /* TBA
+            if (_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
             using var trans = _fixture.DbConnection.BeginTransaction();
-            await _reservationRepository.CreateReservation(reservation);
-            
+            await _reservationRepository.CreateReservation(reservation, trans);
+
             // Act
-            var fetchedReservation = await _reservationRepository.GetReservation(reservation.Id);
-            trans.Rollback();
+            var fetchedReservation = await _reservationRepository.GetReservation(Guid.Parse(reservation.Id));
+
             // Assert
             Assert.Equal(reservation.Id, fetchedReservation.Id);
             Assert.Equal(reservation.RoomNumber, fetchedReservation.RoomNumber);
             Assert.Equal(reservation.GuestEmail, fetchedReservation.GuestEmail);
-            */
 
             await Task.CompletedTask;
+        }
+    }
+
+    public class GetReservation_WhenReservationDoesNotExist : SequentialTestBase
+    {
+        public GetReservation_WhenReservationDoesNotExist(DatabaseSeedFixture fixture) : base(fixture)
+        {
         }
 
         [Fact]
         public async Task GetReservation_ShouldThrowNotFoundException_WhenReservationDoesNotExist()
         {
+            var repository = new ReservationRepository(_fixture.DbConnection);
+
             // Arrange
             var reservationId = Guid.NewGuid();
 
             // Act & Assert
             await Assert.ThrowsAsync<NotFoundException>(() => _reservationRepository.GetReservation(reservationId));
+        }
+    }
+
+    public class CreateReservation : SequentialTestBase
+    {
+        public CreateReservation(DatabaseSeedFixture fixture) : base(fixture)
+        {
         }
 
         [Fact]
@@ -104,25 +127,60 @@ namespace api.Tests.Integration
             var reservation = new Reservation
             {
                 Id = Guid.NewGuid().ToString(),
-                RoomNumber = 103,
-                GuestEmail = "guest3@example.com",
+                RoomNumber = Rooms[0],
+                GuestEmail = Guests[0],
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(4),
                 CheckedIn = false,
                 CheckedOut = false
             };
-
-            /* TBA
+            if(_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
+            using var trans = _fixture.DbConnection.BeginTransaction();
             // Act
-            var createdReservation = await _reservationRepository.CreateReservation(reservation);
+            var createdReservation = await _reservationRepository.CreateReservation(reservation, trans);
 
             // Assert
             Assert.Equal(reservation.Id, createdReservation.Id);
             Assert.Equal(reservation.RoomNumber, createdReservation.RoomNumber);
             Assert.Equal(reservation.GuestEmail, createdReservation.GuestEmail);
-            */
 
             await Task.CompletedTask;
+        }
+    }
+
+    public class CreateReservation_WhenGuestEmailDoesntExist : SequentialTestBase
+    {
+        public CreateReservation_WhenGuestEmailDoesntExist(DatabaseSeedFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task CreateReservation_ShouldThrowSqlliteException_WhenGuestEmailDoesntExist()
+        {
+            // Arrange
+            var reservation = new Reservation
+            {
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = Rooms[0],
+                GuestEmail = "random@email.com",
+                Start = DateTime.UtcNow,
+                End = DateTime.UtcNow.AddDays(4),
+                CheckedIn = false,
+                CheckedOut = false
+            };
+            if(_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
+            using var trans = _fixture.DbConnection.BeginTransaction();
+            // Act & Assert
+            await Assert.ThrowsAsync<SqliteException>(() => _reservationRepository.CreateReservation(reservation, trans));
+        }
+    }
+
+    public class DeleteReservation : SequentialTestBase
+    {
+        public DeleteReservation(DatabaseSeedFixture fixture) : base(fixture)
+        {
         }
 
         [Fact]
@@ -132,26 +190,25 @@ namespace api.Tests.Integration
             var reservation = new Reservation
             {
                 Id = Guid.NewGuid().ToString(),
-                RoomNumber = 104,
-                GuestEmail = "guest4@example.com",
+                RoomNumber = Rooms[0],
+                GuestEmail = Guests[0],
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(1),
                 CheckedIn = false,
                 CheckedOut = false
             };
 
-            /* TBA
-            await _reservationRepository.CreateReservation(reservation);
+            if (_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
+            using var trans = _fixture.DbConnection.BeginTransaction();
+            await _reservationRepository.CreateReservation(reservation, trans);
 
             // Act
-            var result = await _reservationRepository.DeleteReservation(reservation.Id);
-            
+            var result = await _reservationRepository.DeleteReservation(Guid.Parse(reservation.Id));
+
             // Assert
             Assert.True(result);
-            await Assert.ThrowsAsync<NotFoundException>(() => _reservationRepository.GetReservation(reservation.Id));
-            */
-
-            await Task.CompletedTask;
+            await Assert.ThrowsAsync<NotFoundException>(() => _reservationRepository.GetReservation(Guid.Parse(reservation.Id)));
         }
     }
 }

@@ -15,7 +15,7 @@ namespace api.Shared.Validation.Domain
                 .WithMessage("Invalid guest email address.");
             RuleFor(x => x.Id).Must((id) => id != Guid.Empty).WithMessage("Invalid reservation unique identifier.");
             RuleFor(r => r)
-                .Must(r => r.Start < r.End)
+                .Must(r => r.Start <= r.End)
                 .WithMessage("The start date must be before the end date.");
 
             RuleFor(r => r)

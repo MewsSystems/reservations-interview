@@ -3,10 +3,10 @@ using api.Shared.Models.Domain;
 using api.Shared.Models.Errors;
 using api.Shared.Repositories;
 using api.Shared.Validation.Domain;
-using FluentValidation;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace api.Shared.Services
@@ -15,14 +15,17 @@ namespace api.Shared.Services
     {
         private readonly ILogger<ReservationService> _logger;
         private readonly IGuestService _guestService;
+        private readonly IDbConnection _connection;
         private readonly IReservationRepository _repository;
 
         public ReservationService(ILogger<ReservationService> logger,
             IGuestService service,
+            IDbConnection connection,
             IReservationRepository repository)
         {
             _logger = logger;
             _guestService = service;
+            _connection = connection;
             _repository = repository;
         }
 
@@ -31,31 +34,48 @@ namespace api.Shared.Services
             return (await _repository.GetReservations()).ToDomain();
         }
 
+        public async Task<IEnumerable<Reservation>> GetStaffReservations()
+        {
+            return (await _repository.GetStaffReservations()).ToDomain();
+        }
+
         public async Task<Reservation> GetByReservationId(Guid reservationId)
         {
             return (await _repository.GetReservation(reservationId)).ToDomain();
         }
 
-        public async Task<Reservation> Create(Reservation reservation)
+        public async Task<Reservation> Create(Reservation reservation, IDbTransaction? transaction = null)
         {
-            Guest? guest = null;
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
+            using var trans = transaction ?? _connection.BeginTransaction(IsolationLevel.ReadCommitted);
             try
             {
-                guest = await _guestService.GetByEmail(reservation.GuestEmail);
-            }
-            catch (NotFoundException)
-            {
-                guest = await _guestService.Create(new Guest() { Email = reservation.GuestEmail, Name = reservation.GuestEmail });
-            }
+                Guest? guest = null;
+                try
+                {
+                    guest = await _guestService.GetByEmail(reservation.GuestEmail);
+                }
+                catch (NotFoundException)
+                {
+                    guest = await _guestService.Create(new Guest() { Email = reservation.GuestEmail, Name = reservation.GuestEmail }, trans);
+                }
 
-            var validation = await new ReservationValidator().ValidateAsync(reservation);
-            if(!validation.IsValid)
-            {
-                throw new ServiceValidationException(validation.Errors);
+                var validation = await new ReservationValidator().ValidateAsync(reservation);
+                if (!validation.IsValid)
+                {
+                    throw new ServiceValidationException(validation.Errors);
+                }
+                var result = (await _repository.CreateReservation(reservation.FromDomain(), trans)).ToDomain();
+                _logger?.LogInformation("New reservation <{@id}> created.", reservation.Id);
+                trans.Commit();
+                return result;
             }
-            var result = (await _repository.CreateReservation(reservation.FromDomain())).ToDomain();
-            _logger?.LogInformation("New reservation <{@id}> created.", reservation.Id);
-            return result;
+            catch 
+            {
+                trans.Rollback(); 
+                throw;
+            }
         }
 
         public async Task<bool> Delete(Guid reservationId)

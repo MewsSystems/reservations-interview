@@ -13,6 +13,7 @@ public class ExceptionHandlingMiddleware
         _logger = logger;
         _exceptionHandlers = new Dictionary<Type, Func<Exception, HttpContext, Task>>
         {
+            { typeof(ReservationUnavailableException),  HandleValidationException},
             { typeof(RoomAlreadyExistsException) , HandleValidationException },
             { typeof(NotFoundException) , HandleValidationException },
             { typeof(ServiceValidationException), HandleValidationException },

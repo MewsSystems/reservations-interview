@@ -1,5 +1,6 @@
 ﻿using api.Shared.Models.Domain;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace api.Shared.Services
@@ -10,6 +11,6 @@ namespace api.Shared.Services
 
         Task<Guest> GetByEmail(string guestEmail);
 
-        Task<Guest> Create(Guest newGuest);
+        Task<Guest> Create(Guest newGuest, IDbTransaction? transaction = null);
     }
 }

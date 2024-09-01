@@ -3,6 +3,7 @@ using api.Shared.Models.Domain;
 using api.Shared.Repositories;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
+using System.Data;
 using System.Threading.Tasks;
 
 namespace api.Shared.Services
@@ -10,11 +11,13 @@ namespace api.Shared.Services
     public class GuestService : IGuestService
     {
         private readonly ILogger<GuestService> _logger;
+        private readonly IDbConnection _connection;
         private readonly IGuestRepository _repository;
 
-        public GuestService(ILogger<GuestService> logger, IGuestRepository repository)
+        public GuestService(ILogger<GuestService> logger, IDbConnection connection, IGuestRepository repository)
         {
             _logger = logger;
+            _connection = connection;
             _repository = repository;
         }
 
@@ -28,9 +31,9 @@ namespace api.Shared.Services
             return (await _repository.GetGuestByEmail(guestEmail)).ToDomain();
         }
 
-        public async Task<Guest> Create(Guest newGuest)
+        public async Task<Guest> Create(Guest newGuest, IDbTransaction? transaction = null)
         {
-            var result = (await _repository.CreateGuest(newGuest.FromDomain())).ToDomain();
+            var result = (await _repository.CreateGuest(newGuest.FromDomain(), transaction)).ToDomain();
             _logger?.LogInformation("New guest <{@email}> created.", result.Email);
             return result;
         }

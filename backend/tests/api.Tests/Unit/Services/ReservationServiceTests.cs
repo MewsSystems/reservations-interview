@@ -5,6 +5,7 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using api.Shared.Models.Errors;
 using api.Shared.Extensions;
+using System.Data;
 
 namespace api.Tests.Services
 {
@@ -13,6 +14,7 @@ namespace api.Tests.Services
         private readonly Mock<IReservationRepository> _mockRepository;
         private readonly Mock<ILogger<ReservationService>> _mockLogger;
         private readonly Mock<IGuestService> _mockGuestService;
+        private readonly Mock<IDbConnection> _connectionMock;
         private readonly ReservationService _reservationService;
 
         public ReservationServiceTests()
@@ -20,7 +22,8 @@ namespace api.Tests.Services
             _mockRepository = new Mock<IReservationRepository>();
             _mockLogger = new Mock<ILogger<ReservationService>>();
             _mockGuestService = new Mock<IGuestService>();
-            _reservationService = new ReservationService(_mockLogger.Object, _mockGuestService.Object, _mockRepository.Object);
+            _connectionMock = new Mock<IDbConnection>();
+            _reservationService = new ReservationService(_mockLogger.Object, _mockGuestService.Object, _connectionMock.Object, _mockRepository.Object);
         }
 
         [Fact]
@@ -79,6 +82,38 @@ namespace api.Tests.Services
             await Assert.ThrowsAsync<NotFoundException>(() => _reservationService.GetByReservationId(reservationId));
         }
 
+        [Fact]
+        public async Task Create_ShouldReturnReservation_WhenStartDateIsSameAsEndDate()
+        {
+            // Arrange
+            var validReservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "222",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                CheckedIn = false,
+                CheckedOut = false
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.CreateReservation(It.IsAny<api.Shared.Models.DB.Reservation>(), It.IsAny<IDbTransaction>()))
+                .ReturnsAsync(validReservation.FromDomain());
+
+            // Act
+            var reservation = await _reservationService.Create(validReservation);
+
+            // Assert
+            Assert.Equal(reservation.Id, validReservation.Id);
+            Assert.Equal(reservation.RoomNumber, validReservation.RoomNumber);
+            Assert.Equal(reservation.GuestEmail, validReservation.GuestEmail);
+            Assert.Equal(reservation.Start, validReservation.Start);
+            Assert.Equal(reservation.End, validReservation.End);
+        }
+
         [Theory]
         [InlineData("000")]
         [InlineData("001")]
@@ -99,6 +134,10 @@ namespace api.Tests.Services
                 End = DateTime.Now.AddDays(1)
             };
 
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Rollback());
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+
             // Act & Assert
             await Assert.ThrowsAsync<ServiceValidationException>(() => _reservationService.Create(invalidReservation));
         }
@@ -115,6 +154,10 @@ namespace api.Tests.Services
                 Start = DateTime.Now.AddDays(1),
                 End = DateTime.Now
             };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Rollback());
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
 
             // Act & Assert
             await Assert.ThrowsAsync<ServiceValidationException>(() => _reservationService.Create(invalidReservation));
@@ -133,6 +176,10 @@ namespace api.Tests.Services
                 End = DateTime.Now
             };
 
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Rollback());
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+
             // Act & Assert
             await Assert.ThrowsAsync<ServiceValidationException>(() => _reservationService.Create(invalidReservation));
         }
@@ -150,7 +197,10 @@ namespace api.Tests.Services
                 End = DateTime.Now.AddDays(1)
             };
 
-            _mockRepository.Setup(repo => repo.CreateReservation(It.IsAny<api.Shared.Models.DB.Reservation>()))
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.CreateReservation(It.IsAny<api.Shared.Models.DB.Reservation>(), It.IsAny<IDbTransaction>()))
                 .ReturnsAsync(newReservation);
 
             // Act

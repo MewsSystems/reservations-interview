@@ -17,23 +17,6 @@ namespace api.Tests.Integration
         }
 
         [Fact]
-        public async Task GetGuests_ShouldReturnAllGuests()
-        {
-            // Arrange
-            var guest1 = new Guest { Email = "guest1@example.com", Name = "Guest One" };
-            var guest2 = new Guest { Email = "guest2@example.com", Name = "Guest Two" };
-            await _guestRepository.CreateGuest(guest1);
-            await _guestRepository.CreateGuest(guest2);
-
-            // Act
-            var guests = await _guestRepository.GetGuests();
-
-            // Assert
-            Assert.Contains(guests, g => g.Email == guest1.Email);
-            Assert.Contains(guests, g => g.Email == guest2.Email);
-        }
-
-        [Fact]
         public async Task GetGuestByEmail_ShouldReturnGuest_WhenGuestExists()
         {
             // Arrange

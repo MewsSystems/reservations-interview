@@ -50,18 +50,9 @@ namespace api.Controllers
             {
                 newBooking.Id = Guid.NewGuid();
             }
-            try
-            {
-                var createdReservation = await _service.Create(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("An error occured when trying to book a reservation:");
-                Console.WriteLine(ex.ToString());
-
-                return BadRequest("Invalid reservation");
-            }
+ 
+            var createdReservation = await _service.Create(newBooking);
+            return Created($"/reservation/${createdReservation.Id}", createdReservation);
         }
 
         [HttpDelete, Produces("application/json"), Route("{reservationId}")]

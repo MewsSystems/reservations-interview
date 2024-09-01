@@ -14,19 +14,19 @@ namespace api.Shared.Extensions
     {
         public static IServiceCollection AddSqlConnection(this IServiceCollection services, string connectionString)
         {
-            services.AddSingleton<IDbConnection>(sp => new SqliteConnection(connectionString));
+            services.AddScoped<IDbConnection>(sp => new SqliteConnection(connectionString));
             return services;
         }
 
         public static IServiceCollection AddReservationServices(this IServiceCollection services, string connectionString)
         {
             services.AddSqlConnection(connectionString);
-            services.AddSingleton<IGuestRepository, GuestRepository>();
-            services.AddSingleton<IRoomRepository, RoomRepository>();
-            services.AddSingleton<IReservationRepository, ReservationRepository>();
-            services.AddSingleton<IGuestService, GuestService>();
-            services.AddSingleton<IRoomService, RoomService>();
-            services.AddSingleton<IReservationService, ReservationService>();
+            services.AddScoped<IGuestRepository, GuestRepository>();
+            services.AddScoped<IRoomRepository, RoomRepository>();
+            services.AddScoped<IReservationRepository, ReservationRepository>();
+            services.AddScoped<IGuestService, GuestService>();
+            services.AddScoped<IRoomService, RoomService>();
+            services.AddScoped<IReservationService, ReservationService>();
             return services;
         }
 

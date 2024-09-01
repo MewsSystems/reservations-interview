@@ -44,11 +44,12 @@ namespace api.Shared.Repositories
             return guest;
         }
 
-        public Task<Guest> CreateGuest(Guest newGuest)
+        public Task<Guest> CreateGuest(Guest newGuest, IDbTransaction? transaction = null)
         {
             return _db.QuerySingleAsync<Guest>(
                 "INSERT INTO Guests(Email, Name) Values(@Email, @Name) RETURNING *",
-                newGuest
+                newGuest,
+                transaction
             );
         }
 
