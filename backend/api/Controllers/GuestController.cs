@@ -1,5 +1,5 @@
-using api.Shared.Models;
-using api.Shared.Repositories;
+using api.Shared.Models.Domain;
+using api.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -7,18 +7,17 @@ namespace api.Controllers
     [Tags("Guests"), Route("guest")]
     public class GuestController : Controller
     {
-        private GuestRepository _repo;
+        private IGuestService _service;
 
-        public GuestController(GuestRepository guestRepository)
+        public GuestController(IGuestService service)
         {
-            _repo = guestRepository;
+            _service = service;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Guest>> GetGuests()
         {
-            var guests = await _repo.GetGuests();
-
+            var guests = await _service.Get();
             return Json(guests);
         }
     }

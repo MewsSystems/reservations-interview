@@ -1,6 +1,7 @@
-using api.Shared.Models;
+using api.Shared.Models.Domain;
 using api.Shared.Models.Errors;
-using api.Shared.Repositories;
+using api.Shared.Repositories.Dapper;
+using api.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -8,18 +9,17 @@ namespace api.Controllers
     [Tags("Rooms"), Route("room")]
     public class RoomController : Controller
     {
-        private RoomRepository _repo { get; set; }
+        private IRoomService _service { get; set; }
 
-        public RoomController(RoomRepository roomRepository)
+        public RoomController(IRoomService service)
         {
-            _repo = roomRepository;
+            _service = service;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Room>> GetRooms()
         {
-            var rooms = await _repo.GetRooms();
-
+            var rooms = await _service.Get();
             if (rooms == null)
             {
                 return Json(Enumerable.Empty<Room>());
@@ -38,7 +38,7 @@ namespace api.Controllers
 
             try
             {
-                var room = await _repo.GetRoom(roomNumber);
+                var room = await _service.GetByRoomNumber(roomNumber);
 
                 return Json(room);
             }
@@ -51,7 +51,7 @@ namespace api.Controllers
         [HttpPost, Produces("application/json"), Route("")]
         public async Task<ActionResult<Room>> CreateRoom([FromBody] Room newRoom)
         {
-            var createdRoom = await _repo.CreateRoom(newRoom);
+            var createdRoom = await _service.Create(newRoom);
 
             if (createdRoom == null)
             {
@@ -69,7 +69,7 @@ namespace api.Controllers
                 return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
             }
 
-            var deleted = await _repo.DeleteRoom(roomNumber);
+            var deleted = await _service.DeleteByRoomNumber(roomNumber);
 
             return deleted ? NoContent() : NotFound();
         }

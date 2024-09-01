@@ -1,6 +1,6 @@
 using System;
 
-namespace api.Shared.Models
+namespace api.Shared.Models.Domain
 {
     public class Reservation
     {

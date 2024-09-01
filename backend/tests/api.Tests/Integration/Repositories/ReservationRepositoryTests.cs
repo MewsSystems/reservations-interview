@@ -1,6 +1,7 @@
 ﻿using api.Shared.Models.Errors;
 using api.Shared.Models;
 using api.Shared.Repositories;
+using api.Shared.Models.DB;
 
 namespace api.Tests.Integration
 {
@@ -22,8 +23,8 @@ namespace api.Tests.Integration
             // Arrange
             var reservation1 = new Reservation
             {
-                Id = Guid.NewGuid(),
-                RoomNumber = "101",
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = 101,
                 GuestEmail = "guest1@example.com",
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(2),
@@ -32,8 +33,8 @@ namespace api.Tests.Integration
             };
             var reservation2 = new Reservation
             {
-                Id = Guid.NewGuid(),
-                RoomNumber = "102",
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = 102,
                 GuestEmail = "guest2@example.com",
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(3),
@@ -61,8 +62,8 @@ namespace api.Tests.Integration
             // Arrange
             var reservation = new Reservation
             {
-                Id = Guid.NewGuid(),
-                RoomNumber = "101",
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = 101,
                 GuestEmail = "guest@example.com",
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(2),
@@ -102,8 +103,8 @@ namespace api.Tests.Integration
             // Arrange
             var reservation = new Reservation
             {
-                Id = Guid.NewGuid(),
-                RoomNumber = "103",
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = 103,
                 GuestEmail = "guest3@example.com",
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(4),
@@ -130,8 +131,8 @@ namespace api.Tests.Integration
             // Arrange
             var reservation = new Reservation
             {
-                Id = Guid.NewGuid(),
-                RoomNumber = "104",
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = 104,
                 GuestEmail = "guest4@example.com",
                 Start = DateTime.UtcNow,
                 End = DateTime.UtcNow.AddDays(1),

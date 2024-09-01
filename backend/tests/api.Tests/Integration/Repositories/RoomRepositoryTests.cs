@@ -1,7 +1,7 @@
 ﻿using api.Shared.Models.Errors;
-using api.Shared.Models;
-using api.Shared.Repositories;
 using api.Shared.Constants;
+using api.Shared.Repositories.Dapper;
+using api.Shared.Models.DB;
 
 namespace api.Tests.Integration
 {
@@ -21,11 +21,11 @@ namespace api.Tests.Integration
         public async Task GetRoom_ShouldReturnRoom_WhenRoomExists()
         {
             // Arrange
-            var room = new Room { Number = "101", State = State.Ready };
+            var room = new Room { Number = 101, State = State.Ready };
             await _roomRepository.CreateRoom(room);
 
             // Act
-            var fetchedRoom = await _roomRepository.GetRoom("101");
+            var fetchedRoom = await _roomRepository.GetRoom(101);
 
             // Assert
             Assert.Equal(room.Number, fetchedRoom.Number);
@@ -36,14 +36,14 @@ namespace api.Tests.Integration
         public async Task GetRoom_ShouldThrowNotFoundException_WhenRoomDoesNotExist()
         {
             // Arrange & Act & Assert
-            await Assert.ThrowsAsync<NotFoundException>(() => _roomRepository.GetRoom("999"));
+            await Assert.ThrowsAsync<NotFoundException>(() => _roomRepository.GetRoom(999));
         }
 
         [Fact]
         public async Task CreateRoom_ShouldInsertRoomIntoDatabase()
         {
             // Arrange
-            var room = new Room { Number = "102", State = State.Ready };
+            var room = new Room { Number = 102, State = State.Ready };
 
             // Act
             var createdRoom = await _roomRepository.CreateRoom(room);
@@ -57,23 +57,23 @@ namespace api.Tests.Integration
         public async Task DeleteRoom_ShouldRemoveRoomFromDatabase()
         {
             // Arrange
-            var room = new Room { Number = "103", State = State.Ready };
+            var room = new Room { Number = 103, State = State.Ready };
             await _roomRepository.CreateRoom(room);
 
             // Act
-            var result = await _roomRepository.DeleteRoom("103");
+            var result = await _roomRepository.DeleteRoom(103);
 
             // Assert
             Assert.True(result);
-            await Assert.ThrowsAsync<NotFoundException>(() => _roomRepository.GetRoom("103"));
+            await Assert.ThrowsAsync<NotFoundException>(() => _roomRepository.GetRoom(103));
         }
 
         [Fact]
         public async Task GetRooms_ShouldReturnAllRooms()
         {
             // Arrange
-            var room1 = new Room { Number = "104", State = State.Ready };
-            var room2 = new Room { Number = "105", State = State.Occupied };
+            var room1 = new Room { Number = 104, State = State.Ready };
+            var room2 = new Room { Number = 105, State = State.Occupied };
             await _roomRepository.CreateRoom(room1);
             await _roomRepository.CreateRoom(room2);
 

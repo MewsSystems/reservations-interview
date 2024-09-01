@@ -2,13 +2,13 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using api.Shared.Extensions;
-using api.Shared.Models;
+using api.Shared.Models.DB;
 using api.Shared.Models.Errors;
 using Dapper;
 
 namespace api.Shared.Repositories
 {
-    public class GuestRepository
+    public class GuestRepository : IGuestRepository
     {
         private IDbConnection _db { get; set; }
 

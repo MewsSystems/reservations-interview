@@ -1,6 +1,6 @@
-using api.Shared.Models;
+using api.Shared.Models.Domain;
 using api.Shared.Models.Errors;
-using api.Shared.Repositories;
+using api.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers
@@ -8,18 +8,16 @@ namespace api.Controllers
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller
     {
-        private ReservationRepository _repo { get; set; }
-
-        public ReservationController(ReservationRepository reservationRepository)
+        private IReservationService _service { get; set; }
+        public ReservationController(IReservationService service)
         {
-            _repo = reservationRepository;
+            _service = service;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
-
+            var reservations = await _service.Get();
             return Json(reservations);
         }
 
@@ -28,7 +26,7 @@ namespace api.Controllers
         {
             try
             {
-                var reservation = await _repo.GetReservation(reservationId);
+                var reservation = await _service.GetByReservationId(reservationId);
                 return Json(reservation);
             }
             catch (NotFoundException)
@@ -55,7 +53,7 @@ namespace api.Controllers
 
             try
             {
-                var createdReservation = await _repo.CreateReservation(newBooking);
+                var createdReservation = await _service.Create(newBooking);
                 return Created($"/reservation/${createdReservation.Id}", createdReservation);
             }
             catch (Exception ex)
@@ -70,7 +68,7 @@ namespace api.Controllers
         [HttpDelete, Produces("application/json"), Route("{reservationId}")]
         public async Task<IActionResult> DeleteReservation(Guid reservationId)
         {
-            var result = await _repo.DeleteReservation(reservationId);
+            var result = await _service.Delete(reservationId);
 
             return result ? NoContent() : NotFound();
         }

@@ -1,4 +1,4 @@
-using api.Shared.Models;
+using api.Shared.Models.Domain;
 using Dapper;
 using Microsoft.Extensions.DependencyInjection;
 using System;

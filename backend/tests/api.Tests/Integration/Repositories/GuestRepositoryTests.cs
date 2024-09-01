@@ -1,7 +1,6 @@
-﻿using api.Shared.Models;
+﻿using api.Shared.Models.DB;
 using api.Shared.Models.Errors;
 using api.Shared.Repositories;
-using System.Data;
 
 namespace api.Tests.Integration
 {
