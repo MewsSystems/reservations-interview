@@ -1,6 +1,9 @@
-﻿using api.Shared.Repositories;
+﻿using api.Shared.Models.Domain;
+using api.Shared.Repositories;
 using api.Shared.Repositories.Dapper;
 using api.Shared.Services;
+using api.Shared.Validation.Domain;
+using FluentValidation;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.DependencyInjection;
 using System.Data;
@@ -26,5 +29,6 @@ namespace api.Shared.Extensions
             services.AddSingleton<IReservationService, ReservationService>();
             return services;
         }
+
     }
 }

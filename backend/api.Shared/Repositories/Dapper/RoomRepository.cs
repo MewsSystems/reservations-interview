@@ -23,6 +23,7 @@ namespace api.Shared.Repositories.Dapper
                 "SELECT * FROM Rooms WHERE Number = @roomNumber;",
                 new { roomNumber }
             );
+            // I don't like this, I would rather support nullable
             if (room == null)
             {
                 throw new NotFoundException($"Room {roomNumber} not found");

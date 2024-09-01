@@ -1,6 +1,9 @@
 ﻿using api.Shared.Extensions;
 using api.Shared.Models.Domain;
+using api.Shared.Models.Errors;
 using api.Shared.Repositories;
+using api.Shared.Validation.Domain;
+using FluentValidation;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -11,11 +14,15 @@ namespace api.Shared.Services
     public class ReservationService : IReservationService
     {
         private readonly ILogger<ReservationService> _logger;
+        private readonly IGuestService _guestService;
         private readonly IReservationRepository _repository;
 
-        public ReservationService(ILogger<ReservationService> logger, IReservationRepository repository)
+        public ReservationService(ILogger<ReservationService> logger,
+            IGuestService service,
+            IReservationRepository repository)
         {
             _logger = logger;
+            _guestService = service;
             _repository = repository;
         }
 
@@ -31,6 +38,21 @@ namespace api.Shared.Services
 
         public async Task<Reservation> Create(Reservation reservation)
         {
+            Guest? guest = null;
+            try
+            {
+                guest = await _guestService.GetByEmail(reservation.GuestEmail);
+            }
+            catch (NotFoundException)
+            {
+                guest = await _guestService.Create(new Guest() { Email = reservation.GuestEmail, Name = reservation.GuestEmail });
+            }
+
+            var validation = await new ReservationValidator().ValidateAsync(reservation);
+            if(!validation.IsValid)
+            {
+                throw new ServiceValidationException(validation.Errors);
+            }
             var result = (await _repository.CreateReservation(reservation.FromDomain())).ToDomain();
             _logger?.LogInformation("New reservation <{@id}> created.", reservation.Id);
             return result;

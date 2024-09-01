@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Threading.Tasks;
 using api.Shared.Extensions;
 using api.Shared.Models.DB;
@@ -39,6 +38,7 @@ namespace api.Shared.Repositories
                 new { reservationIdStr = reservationId.ToString() }
             );
 
+            // I don't like this, I would rather support nullable
             if (reservation == null)
             {
                 throw new NotFoundException($"Room {reservationId} not found");
@@ -49,9 +49,10 @@ namespace api.Shared.Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { Id = "", RoomNumber = 123, GuestEmail = "todo" }
+            return await _db.QuerySingleAsync<Reservation>(
+                @"INSERT INTO Reservations(Id, GuestEmail, RoomNumber, Start, End, CheckedIn, CheckedOut)
+                    Values(@Id, @GuestEmail, @RoomNumber, @Start, @End, @CheckedIn, @CheckedOut) RETURNING *",
+                newReservation
             );
         }
 

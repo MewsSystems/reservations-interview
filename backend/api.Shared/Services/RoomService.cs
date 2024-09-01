@@ -1,6 +1,8 @@
 ﻿using api.Shared.Extensions;
 using api.Shared.Models.Domain;
+using api.Shared.Models.Errors;
 using api.Shared.Repositories;
+using api.Shared.Validation.Domain;
 using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -30,6 +32,20 @@ namespace api.Shared.Services
 
         public async Task<Room> Create(Room newRoom)
         {
+            var roomValidation =  await new RoomValidator().ValidateAsync(newRoom);
+            if(!roomValidation.IsValid)
+            {
+                throw new ServiceValidationException(roomValidation.Errors);
+            }
+            try
+            {
+                var existingRoom = await _repository.GetRoom(newRoom.FromDomain().Number);
+                if (existingRoom != null)
+                    throw new RoomAlreadyExistsException(newRoom.Number);
+            }
+            catch(NotFoundException)
+            {}
+ 
             var result = (await _repository.CreateRoom(newRoom.FromDomain())).ToDomain();
             _logger?.LogInformation("New room <{@roomNumber}> created.", result.Number);
             return result;

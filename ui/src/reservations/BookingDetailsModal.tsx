@@ -7,7 +7,7 @@ import {
 } from "@datepicker-react/styled";
 import { Box, Button, Dialog, Separator, TextField } from "@radix-ui/themes";
 import { NewReservation } from "./api";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import styled from "styled-components";
 
 interface BookingDetailsModalProps {
@@ -49,6 +49,7 @@ const BottomRightBox = styled(Box)`
 `;
 
 function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
+  const emailFieldRef = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState("");
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
@@ -56,12 +57,35 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
   ]);
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
   const showProcessingToast = useShowInfoToast("Processing booking...");
-  const showNoInfoToast = useShowInfoToast("Missing email or dates.");
+  const showInvalidEmailToast = useShowInfoToast("Missing or invalid email address.");
+  const showInvalidDatesInfoToast = useShowInfoToast("Booking must be minimum 1 day or at most 10 days.");
+
+  const validateBookingDates = useCallback(() => {
+    const [startDate, endDate] = dateRange;
+    if (!startDate || !endDate) {
+      return false
+    }
+    const diffInMs = endDate.getTime() - startDate.getTime();
+    // Check if number of days between 1 and 30
+    const diffInDays = diffInMs / (1000 * 60 * 60 * 24);
+    const validDateRange = diffInDays >= 0 && diffInDays <= 30;
+    if (!validDateRange) {
+      return false;
+    }
+    return true;
+  }, [dateRange]);
 
   function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
-    if (!email || !dateRange[0] || !dateRange[1]) {
-      showNoInfoToast();
+
+    if (!email || !emailFieldRef?.current?.checkValidity()) {
       evt.preventDefault();
+      showInvalidEmailToast();
+      return false;
+    }
+
+    if (!validateBookingDates()) {
+      evt.preventDefault();
+      showInvalidDatesInfoToast();
       return false;
     }
 
@@ -69,8 +93,8 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
     onSubmit({
       RoomNumber: roomNumber,
       GuestEmail: email,
-      Start: fromDateStringToIso(dateRange[0]),
-      End: fromDateStringToIso(dateRange[1]),
+      Start: fromDateStringToIso(dateRange[0] as Date),
+      End: fromDateStringToIso(dateRange[1] as Date),
     });
     return true;
   }
@@ -95,6 +119,7 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
   return (
     <Box style={{ position: "relative", minHeight: 700 }}>
       <TextField.Root
+        ref={emailFieldRef}
         placeholder="... address@domain.tld ..."
         onChange={(evt) => setEmail(evt.target.value)}
         value={email}

@@ -16,11 +16,11 @@ namespace api.Shared.Db
             using var db = provider.GetRequiredService<IDbConnection>();
 
             // SQLite WAL (write-ahead log) go brrrr
-            var executed = db.Execute("PRAGMA journal_mode = wal;");
+            db.Execute("PRAGMA journal_mode = wal;");
             // SQLite does not enforce FKs by default
-            executed = db.Execute("PRAGMA foreign_keys = ON;");
+            db.Execute("PRAGMA foreign_keys = ON;");
 
-            executed = db.Execute(
+            db.Execute(
                 $@"
               CREATE TABLE IF NOT EXISTS Guests (
                 {nameof(Guest.Email)} TEXT PRIMARY KEY NOT NULL,
@@ -29,7 +29,7 @@ namespace api.Shared.Db
             "
             );
 
-            executed = db.Execute(
+            db.Execute(
                 $@"
               CREATE TABLE IF NOT Exists Rooms (
                 {nameof(Room.Number)} INT PRIMARY KEY NOT NULL,
@@ -38,7 +38,7 @@ namespace api.Shared.Db
             "
             );
 
-            executed = db.Execute(
+            db.Execute(
                 $@"
               CREATE TABLE IF NOT EXISTS Reservations (
                 {nameof(Reservation.Id)} TEXT PRIMARY KEY NOT NULL,
@@ -55,9 +55,6 @@ namespace api.Shared.Db
               );
             "
             );
-
-            var tables = db.Query<string>("SELECT name FROM sqlite_master WHERE type='table';");
-
         }
     }
 }

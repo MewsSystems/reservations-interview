@@ -1,6 +1,5 @@
 using api.Shared.Models.Domain;
 using api.Shared.Models.Errors;
-using api.Shared.Repositories.Dapper;
 using api.Shared.Services;
 using Microsoft.AspNetCore.Mvc;
 

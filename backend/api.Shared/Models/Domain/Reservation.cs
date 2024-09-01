@@ -8,7 +8,7 @@ namespace api.Shared.Models.Domain
         /// PKID for Reservations
         /// </summary>
         public Guid Id { get; set; }
-
+    
         public required string RoomNumber { get; set; }
 
         public required string GuestEmail { get; set; }

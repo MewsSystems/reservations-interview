@@ -50,7 +50,6 @@ namespace api.Controllers
             {
                 newBooking.Id = Guid.NewGuid();
             }
-
             try
             {
                 var createdReservation = await _service.Create(newBooking);

@@ -15,7 +15,7 @@ namespace api.Shared.Extensions
             if (reservation == null)
                 throw new ArgumentNullException($"Cannot map null <{nameof(Models.DB.Reservation)}> object to db object.");
             return new Models.DB.Reservation {
-                Id = Guid.NewGuid().ToString(),
+                Id = reservation.Id.ToString(),
                 RoomNumber = reservation.RoomNumber.ConvertRoomNumberToInt(),
                 GuestEmail = reservation.GuestEmail,
                 Start = reservation.Start,

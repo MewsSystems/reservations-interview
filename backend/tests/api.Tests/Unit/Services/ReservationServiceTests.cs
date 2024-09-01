@@ -12,13 +12,15 @@ namespace api.Tests.Services
     {
         private readonly Mock<IReservationRepository> _mockRepository;
         private readonly Mock<ILogger<ReservationService>> _mockLogger;
+        private readonly Mock<IGuestService> _mockGuestService;
         private readonly ReservationService _reservationService;
 
         public ReservationServiceTests()
         {
             _mockRepository = new Mock<IReservationRepository>();
             _mockLogger = new Mock<ILogger<ReservationService>>();
-            _reservationService = new ReservationService(_mockLogger.Object, _mockRepository.Object);
+            _mockGuestService = new Mock<IGuestService>();
+            _reservationService = new ReservationService(_mockLogger.Object, _mockGuestService.Object, _mockRepository.Object);
         }
 
         [Fact]
@@ -46,11 +48,11 @@ namespace api.Tests.Services
         {
             // Arrange
             var reservationId = Guid.NewGuid();
-            var reservation = new api.Shared.Models.DB.Reservation 
-            { 
-                Id = reservationId.ToString(), 
-                RoomNumber = 101, 
-                GuestEmail = "guest1@example.com" 
+            var reservation = new api.Shared.Models.DB.Reservation
+            {
+                Id = reservationId.ToString(),
+                RoomNumber = 101,
+                GuestEmail = "guest1@example.com"
             };
 
             _mockRepository.Setup(repo => repo.GetReservation(reservationId)).ReturnsAsync(reservation);
@@ -77,32 +79,75 @@ namespace api.Tests.Services
             await Assert.ThrowsAsync<NotFoundException>(() => _reservationService.GetByReservationId(reservationId));
         }
 
-        [Fact]
-        public async Task Create_ShouldThrowInvalidRoomNumber_WhenRoomNumberIsInvalid()
+        [Theory]
+        [InlineData("000")]
+        [InlineData("001")]
+        [InlineData("1000")]
+        [InlineData("InvalidData")]
+        [InlineData("-101")]
+        [InlineData("2020")]
+        [InlineData("01")]
+        public async Task Create_ShouldThrowValidationException_WhenRoomNumberIsInvalid(string roomNumber)
         {
             // Arrange
             var invalidReservation = new Reservation
             {
                 Id = Guid.NewGuid(),
-                RoomNumber = "InvalidRoomNumber", // Invalid room number
+                RoomNumber = roomNumber, // Invalid room number
                 GuestEmail = "guest@example.com",
                 Start = DateTime.Now,
                 End = DateTime.Now.AddDays(1)
             };
 
             // Act & Assert
-            await Assert.ThrowsAsync<InvalidRoomNumber>(() => _reservationService.Create(invalidReservation));
+            await Assert.ThrowsAsync<ServiceValidationException>(() => _reservationService.Create(invalidReservation));
+        }
+
+        [Fact]
+        public async Task Create_ShouldThrowValidationException_WhenStartDateIsAfterEndDate()
+        {
+            // Arrange
+            var invalidReservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "111",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now.AddDays(1),
+                End = DateTime.Now
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ServiceValidationException>(() => _reservationService.Create(invalidReservation));
+        }
+
+        [Fact]
+        public async Task Create_ShouldThrowValidationException_WhenStartDateIsMinValue()
+        {
+            // Arrange
+            var invalidReservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "111",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.MinValue,
+                End = DateTime.Now
+            };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ServiceValidationException>(() => _reservationService.Create(invalidReservation));
         }
 
         [Fact]
         public async Task CreateReservation_ShouldLogInformationAndReturnCreatedReservation()
         {
             // Arrange
-            var newReservation = new api.Shared.Models.DB.Reservation 
-            { 
-                Id = Guid.NewGuid().ToString(), 
-                RoomNumber = 101, 
-                GuestEmail = "guest1@example.com" 
+            var newReservation = new api.Shared.Models.DB.Reservation
+            {
+                Id = Guid.NewGuid().ToString(),
+                RoomNumber = 101,
+                GuestEmail = "guest1@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now.AddDays(1)
             };
 
             _mockRepository.Setup(repo => repo.CreateReservation(It.IsAny<api.Shared.Models.DB.Reservation>()))
