@@ -1,68 +1,73 @@
+using api.Authorization;
+using api.Models;
+using api.Shared.Services;
+using api.Utils;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace api.Controllers
 {
     [Route("staff")]
     public class StaffController : Controller
     {
-        private IConfiguration Config { get; set; }
+        private IConfiguration _config;
+        private readonly IReservationService _reservationService;
 
-        public StaffController(IConfiguration config)
+        public StaffController(IConfiguration config, IReservationService reservationService)
         {
-            Config = config;
-        }
-
-        /// <summary>
-        /// Checks if the request is from a staff member, if not returns true and a 403 result
-        /// </summary>
-        /// <param name="request"></param>
-        private bool IsNotStaff(HttpRequest request, out IActionResult? result)
-        {
-            // TODO explore UseAuthentication
-            request.Cookies.TryGetValue("access", out string? accessValue);
-
-            if (accessValue == null || accessValue == "0")
-            {
-                result = StatusCode(403);
-                return true;
-            }
-
-            result = null;
-            return false;
+            _config = config;
+            _reservationService = reservationService;
         }
 
         [HttpGet, Route("login")]
         public IActionResult CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
         {
-            var configuredSecret = Config.GetValue<string>("staffAccessCode");
-            if (configuredSecret != accessCode)
+            var configuredSecret = _config.GetValue<string>("staffAccessCode");
+            var encryptionKey = _config.GetValue<string>("encryptionKey");
+
+            if (string.IsNullOrEmpty(configuredSecret) || string.IsNullOrEmpty(encryptionKey))
+                throw new Exception("Staff controller not working. Please set config file with staffAccessCode, encryptionKey");
+
+            if (accessCode != configuredSecret)
             {
-                // don't set cookie, don't indicate anything
-                return NoContent();
+                return StatusCode(StatusCodes.Status401Unauthorized);
             }
+
+            var encryptedValue = Encryption.AES.Encrypt(
+                JsonSerializer.Serialize(new CookieValue() { 
+                    AccessCode = configuredSecret, 
+                    Ticks = DateTime.Now.Ticks
+            }), encryptionKey);
+
+            // Set secure cookie
             Response.Cookies.Append(
                 "access",
-                "1",
+                encryptedValue,
                 new CookieOptions
-                // TODO evaluate cookie options & auth mechanism for best security practices
                 {
                     IsEssential = true,
                     SameSite = SameSiteMode.Strict,
-                    HttpOnly = true,
-                    Secure = true
+                    HttpOnly = false, // We have to use this to use it in javascript
+                    Secure = true,
+                    Expires = DateTimeOffset.UtcNow.AddHours(1)
                 }
             );
+
             return NoContent();
         }
 
+
+        [CookieAuthorization]
+        [HttpGet, Route("reservation")]
+        public async Task<IActionResult> GetReservations()
+        {
+            return Json(await _reservationService.GetStaffReservations());
+        }
+        
+        [CookieAuthorization]
         [HttpGet, Route("check")]
         public IActionResult CheckCookie()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
-            {
-                return result!;
-            }
-
             return Ok("Authorized");
         }
     }

@@ -89,6 +89,12 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
       return false;
     }
 
+    console.log(dateRange[0])
+    console.log(dateRange[1])
+
+    console.log(fromDateStringToIso(dateRange[0] as Date))
+    console.log(fromDateStringToIso(dateRange[1] as Date))
+
     showProcessingToast();
     onSubmit({
       RoomNumber: roomNumber,

@@ -6,10 +6,15 @@ import {
 import { Layout } from "./Layout";
 import { LandingPage } from "./LandingPage";
 import { ReservationPage } from "./reservations/ReservationPage";
+import { LoginPage } from "./staff/Login/LoginPage";
+import { ProtectedRoute } from "./components/Guard/ProtectedRoute";
+import { AnonymousRoute } from "./components/Guard/AnonymousRoute";
+import { StaffReservationPage } from "./staff/Reservations/ReservationPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
 });
+
 
 function getRootRoute() {
   return rootRoute;
@@ -25,6 +30,16 @@ const ROUTES = [
     path: "/reservations",
     getParentRoute: getRootRoute,
     component: ReservationPage,
+  }),
+  createRoute({
+    path: "/login",
+    getParentRoute: getRootRoute,
+    component: () => <AnonymousRoute><LoginPage /></AnonymousRoute>
+  }),
+  createRoute({
+    path: "/staff/reservations",
+    getParentRoute: getRootRoute,
+    component: () => <ProtectedRoute><StaffReservationPage /></ProtectedRoute>
   }),
 ];
 

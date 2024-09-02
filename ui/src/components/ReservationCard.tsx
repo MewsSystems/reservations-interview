@@ -1,4 +1,4 @@
-import { Text, Card, Inset, Dialog } from "@radix-ui/themes";
+import { Text, Card, Inset, Dialog, Box } from "@radix-ui/themes";
 import { PropsWithChildren } from "react";
 import styled from "styled-components";
 
@@ -13,7 +13,8 @@ const RoomImg = styled.img`
 export type ReservationCardProps = PropsWithChildren<{
   onClick: () => void;
   imgSrc: string;
-  roomNumber: string;
+  title: string;
+  subTitle?: string;
 }>;
 
 /** A Card wrapped in a Dialog.Trigger */
@@ -26,8 +27,16 @@ export function ReservationCard(props: ReservationCardProps) {
             <RoomImg src={props.imgSrc} alt="room photo" />
           </Inset>
           <Text size="5" align="left">
-            Room #{props.roomNumber}
+            {props.title}
           </Text>
+
+          {props.subTitle ?
+            <Box>
+              <Text size="3">
+                {props.subTitle}
+              </Text>
+            </Box> : <></>}
+
         </a>
       </Card>
     </Dialog.Trigger>
