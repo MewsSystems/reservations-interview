@@ -34,10 +34,11 @@ namespace api.Controllers
             }
 
             var encryptedValue = Encryption.AES.Encrypt(
-                JsonSerializer.Serialize(new CookieValue() { 
-                    AccessCode = configuredSecret, 
+                JsonSerializer.Serialize(new CookieValue()
+                {
+                    AccessCode = configuredSecret,
                     Ticks = DateTime.Now.Ticks
-            }), encryptionKey);
+                }), encryptionKey);
 
             // Set secure cookie
             Response.Cookies.Append(
@@ -63,7 +64,7 @@ namespace api.Controllers
         {
             return Json(await _reservationService.GetStaffReservations());
         }
-        
+
         [CookieAuthorization]
         [HttpGet, Route("check")]
         public IActionResult CheckCookie()

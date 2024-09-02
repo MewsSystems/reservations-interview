@@ -17,5 +17,7 @@ namespace api.Shared.Services
         Task<Reservation> Create(Reservation reservation, IDbTransaction? transaction = null);
 
         Task<bool> Delete(Guid reservationId);
+
+        Task<bool> CheckIn(Guid reservationId, string emailAddress);
     }
 }

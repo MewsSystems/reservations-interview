@@ -96,5 +96,16 @@ namespace api.Shared.Repositories
 
             return deleted > 0;
         }
+
+        public async Task<bool> CheckIn(Guid reservationId, string emailAddress, IDbTransaction? dbTransaction = null)
+        {
+            var updated = await _db.ExecuteAsync(
+                "UPDATE Reservations SET CheckedIn = 1 WHERE GuestEmail = @emailAddress AND Id = @reservationId;",
+                new { emailAddress, reservationId = reservationId.ToString() },
+                dbTransaction
+            );
+
+            return updated > 0;
+        }
     }
 }

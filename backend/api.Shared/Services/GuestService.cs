@@ -11,14 +11,12 @@ namespace api.Shared.Services
     public class GuestService : IGuestService
     {
         private readonly ILogger<GuestService> _logger;
-        private readonly IDbConnection _connection;
         private readonly IGuestRepository _repository;
 
-        public GuestService(ILogger<GuestService> logger, IDbConnection connection, IGuestRepository repository)
+        public GuestService(ILogger<GuestService> logger, IGuestRepository repository)
         {
-            _logger = logger;
-            _connection = connection;
-            _repository = repository;
+            _logger = logger.ThrowIfNull(nameof(ILogger<GuestService>));
+            _repository = repository.ThrowIfNull(nameof(IGuestRepository));
         }
 
         public async Task<IEnumerable<Guest>> Get()
@@ -45,5 +43,15 @@ namespace api.Shared.Services
                 _logger?.LogInformation("Guest <{@email}> deleted.", guestEmail);
             return result;
         }
+
+        public async Task<bool> ConfirmAccount(string guestEmail)
+        {
+            await _repository.GetGuestByEmail(guestEmail);
+            var result = await _repository.ConfirmAccount(guestEmail);
+            if (result)
+                _logger?.LogInformation("Guest <{@email}> email confirmed.", guestEmail);
+            return result;
+        }
+
     }
 }

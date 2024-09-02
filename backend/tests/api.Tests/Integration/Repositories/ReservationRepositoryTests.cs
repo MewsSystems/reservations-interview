@@ -149,6 +149,66 @@ namespace api.Tests.Integration
         }
     }
 
+    public class CheckInReservation : SequentialTestBase
+    {
+        public CheckInReservation(DatabaseSeedFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task CheckInReservation_ShouldSucceed()
+        {
+            var reservationId = Guid.NewGuid();
+            // Arrange
+            var reservation = new Reservation
+            {
+                Id = reservationId.ToString(),
+                RoomNumber = Rooms[0],
+                GuestEmail = Guests[0],
+                Start = DateTime.UtcNow,
+                End = DateTime.UtcNow.AddDays(4),
+                CheckedIn = false,
+                CheckedOut = false
+            };
+            if (_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
+            
+            using var trans = _fixture.DbConnection.BeginTransaction();
+            var createdReservation = await _reservationRepository.CreateReservation(reservation, trans);
+
+            // Act
+
+            var result = await _reservationRepository.CheckIn(reservationId, reservation.GuestEmail, trans);
+
+            // Assert
+            Assert.True(result);
+
+            await Task.CompletedTask;
+        }
+    }
+
+    public class CheckInReservation_ShouldFail : SequentialTestBase
+    {
+        public CheckInReservation_ShouldFail(DatabaseSeedFixture fixture) : base(fixture)
+        {
+        }
+
+        [Fact]
+        public async Task CreateReservation_ShouldFail()
+        {
+            if (_fixture.DbConnection.State != System.Data.ConnectionState.Open)
+                _fixture.DbConnection.Open();
+
+            using var trans = _fixture.DbConnection.BeginTransaction();
+            
+            // Act
+            var result = await _reservationRepository.CheckIn(Guid.NewGuid(), "Test", trans);
+
+            // Assert
+            Assert.False(result);
+        }
+    }
+
     public class CreateReservation_WhenGuestEmailDoesntExist : SequentialTestBase
     {
         public CreateReservation_WhenGuestEmailDoesntExist(DatabaseSeedFixture fixture) : base(fixture)

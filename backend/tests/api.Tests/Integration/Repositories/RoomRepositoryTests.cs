@@ -84,5 +84,29 @@ namespace api.Tests.Integration
             Assert.Contains(rooms, r => r.Number == room1.Number);
             Assert.Contains(rooms, r => r.Number == room2.Number);
         }
+
+        [Fact]
+        public async Task UpdateRoomStatus_ShouldSucced()
+        {
+            // Arrange
+            var room = new Room { Number = 123, State = State.Ready };
+            await _roomRepository.CreateRoom(room);
+
+            // Act
+            var result = await _roomRepository.UpdateRoomStatus(room.Number, State.Dirty);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task UpdateRoomStatus_ShouldFail()
+        {
+            // Act
+            var result = await _roomRepository.UpdateRoomStatus(999, State.Dirty);
+
+            // Assert
+            Assert.False(result);
+        }
     }
 }

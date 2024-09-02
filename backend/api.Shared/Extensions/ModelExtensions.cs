@@ -92,14 +92,14 @@ namespace api.Shared.Extensions
         {
             if (guest == null)
                 throw new ArgumentNullException($"Cannot map null <{nameof(Models.Domain.Guest)}> object to db object.");
-            return new Models.DB.Guest { Email = guest.Email, Name = guest.Name, Surname = guest.Surname };
+            return new Models.DB.Guest { Email = guest.Email, Name = guest.Name, Surname = guest.Surname, IsValidated = guest.IsValidated };
         }
 
         public static Models.Domain.Guest ToDomain(this Models.DB.Guest guest)
         {
             if (guest == null)
                 throw new ArgumentNullException($"Cannot map null <{nameof(Models.DB.Guest)}> object to domain object.");
-            return new Models.Domain.Guest { Email = guest.Email, Name = guest.Name, Surname = guest.Surname };
+            return new Models.Domain.Guest { Email = guest.Email, Name = guest.Name, Surname = guest.Surname, IsValidated = guest.IsValidated };
         }
 
         public static IEnumerable<Models.Domain.Guest> ToDomain(this IEnumerable<Models.DB.Guest> rooms)

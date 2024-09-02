@@ -25,7 +25,6 @@ export function ReservationPage() {
   }
 
   function onSubmit(booking: NewReservation) {
-    console.log(booking)
     bookRoom(booking).then(onClose).then(showToast);
   }
 

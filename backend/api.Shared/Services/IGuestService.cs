@@ -11,6 +11,8 @@ namespace api.Shared.Services
 
         Task<Guest> GetByEmail(string guestEmail);
 
+        Task<bool> ConfirmAccount(string guestEmail);
+
         Task<Guest> Create(Guest newGuest, IDbTransaction? transaction = null);
     }
 }

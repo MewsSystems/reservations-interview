@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using api.Shared.Models.Errors;
 using api.Shared.Extensions;
 using System.Data;
+using api.Shared.Constants;
 
 namespace api.Tests.Services
 {
@@ -14,6 +15,7 @@ namespace api.Tests.Services
         private readonly Mock<IReservationRepository> _mockRepository;
         private readonly Mock<ILogger<ReservationService>> _mockLogger;
         private readonly Mock<IGuestService> _mockGuestService;
+        private readonly Mock<IRoomService> _mockRoomService;
         private readonly Mock<IDbConnection> _connectionMock;
         private readonly ReservationService _reservationService;
 
@@ -22,8 +24,9 @@ namespace api.Tests.Services
             _mockRepository = new Mock<IReservationRepository>();
             _mockLogger = new Mock<ILogger<ReservationService>>();
             _mockGuestService = new Mock<IGuestService>();
+            _mockRoomService = new Mock<IRoomService>();
             _connectionMock = new Mock<IDbConnection>();
-            _reservationService = new ReservationService(_mockLogger.Object, _mockGuestService.Object, _connectionMock.Object, _mockRepository.Object);
+            _reservationService = new ReservationService(_mockLogger.Object, _mockGuestService.Object, _connectionMock.Object, _mockRoomService.Object, _mockRepository.Object);
         }
 
         [Fact]
@@ -239,6 +242,155 @@ namespace api.Tests.Services
 
             // Assert
             Assert.False(result);
+        }
+
+        [Fact]
+        public async Task CheckIn_ShouldFail_WhenRepositoryCheckInFails()
+        {
+            // Arrange
+            var reservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "222",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                CheckedIn = false,
+                CheckedOut = false
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+                .ReturnsAsync(false);
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.GetReservation(reservation.Id)).ReturnsAsync(reservation.FromDomain());
+            _mockRepository.Setup(repo => repo.CheckIn(reservation.Id, reservation.GuestEmail, transactionMock.Object))
+                .ReturnsAsync(false);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _reservationService.CheckIn(reservation.Id, reservation.GuestEmail));
+            transactionMock.Verify(transactionMock => transactionMock.Rollback(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CheckIn_ShouldFail_WhenReservationUpdateRoomStatusFails()
+        {
+            // Arrange
+            var reservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "222",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                CheckedIn = false,
+                CheckedOut = false
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+                .ReturnsAsync(false);
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.GetReservation(reservation.Id)).ReturnsAsync(reservation.FromDomain());
+
+            // Act & Assert
+            await Assert.ThrowsAsync<Exception>(() => _reservationService.CheckIn(reservation.Id, reservation.GuestEmail));
+            transactionMock.Verify(transactionMock => transactionMock.Rollback(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CheckIn_ShouldFail_WhenReservationAlreadyCheckedIn()
+        {
+            // Arrange
+            var reservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "222",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                CheckedIn = true,
+                CheckedOut = false
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+                .ReturnsAsync(true);
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.GetReservation(reservation.Id)).ReturnsAsync(reservation.FromDomain());
+
+            // Act & Assert
+            await Assert.ThrowsAsync<BadRequestException>(() => _reservationService.CheckIn(reservation.Id, reservation.GuestEmail));
+            transactionMock.Verify(transactionMock => transactionMock.Rollback(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CheckIn_ShouldFail_WhenReservationExistsForProvidedEmail()
+        {
+            // Arrange
+            var reservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "222",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                CheckedIn = false,
+                CheckedOut = false
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+                .ReturnsAsync(true);
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.GetReservation(reservation.Id))
+                .ReturnsAsync(new Shared.Models.DB.Reservation() { GuestEmail = "test@test", Id = Guid.NewGuid().ToString()});
+
+            // Act & Assert
+            await Assert.ThrowsAsync<NotFoundException>(() => _reservationService.CheckIn(reservation.Id, reservation.GuestEmail));
+            transactionMock.Verify(transactionMock => transactionMock.Rollback(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CheckIn_ShouldFail_WhenWrongEmailAddress()
+        {
+            // Arrange
+            var validReservation = new Reservation
+            {
+                Id = Guid.NewGuid(),
+                RoomNumber = "222",
+                GuestEmail = "guest@example.com",
+                Start = DateTime.Now,
+                End = DateTime.Now,
+                CheckedIn = false,
+                CheckedOut = false
+            };
+
+            var transactionMock = new Mock<IDbTransaction>();
+            transactionMock.Setup(x => x.Commit());
+            _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(validReservation.RoomNumber, State.Occupied, transactionMock.Object))
+                .ReturnsAsync(true);
+            _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRepository.Setup(repo => repo.GetReservation(validReservation.Id))
+                .ReturnsAsync(validReservation.FromDomain());
+            _mockRepository.Setup(repo => repo.CheckIn(validReservation.Id, validReservation.GuestEmail, transactionMock.Object))
+                    .ReturnsAsync(true);
+
+            // Act.
+            var result = await _reservationService.CheckIn(validReservation.Id, validReservation.GuestEmail);
+
+            // Assert
+            Assert.True(result);
+            transactionMock.Verify(transactionMock => transactionMock.Commit(), Times.Once);
         }
     }
 }

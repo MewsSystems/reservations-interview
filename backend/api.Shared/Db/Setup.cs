@@ -55,6 +55,20 @@ namespace api.Shared.Db
               );
             "
             );
+
+            var columnExists = db.ExecuteScalar<int>(
+            $@"
+                SELECT COUNT(*)
+                FROM pragma_table_info('Guests')
+                WHERE name = 'IsValidated';
+            ");
+
+            if (columnExists == 0)
+            {
+                db.Execute(
+                    $@"ALTER TABLE Guests ADD COLUMN IsValidated INT NOT NULL DEFAULT 0;"
+                );
+            }
         }
     }
 }

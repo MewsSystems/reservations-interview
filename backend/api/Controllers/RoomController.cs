@@ -30,7 +30,7 @@ namespace api.Controllers
         [HttpGet, Produces("application/json"), Route("{roomNumber}")]
         public async Task<ActionResult<Room>> GetRoom(string roomNumber)
         {
-            if (roomNumber.Length != 3)
+            if (string.IsNullOrEmpty(roomNumber) || roomNumber.Length != 3)
             {
                 return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
             }
@@ -38,7 +38,6 @@ namespace api.Controllers
             try
             {
                 var room = await _service.GetByRoomNumber(roomNumber);
-
                 return Json(room);
             }
             catch (NotFoundException)
@@ -50,6 +49,10 @@ namespace api.Controllers
         [HttpPost, Produces("application/json"), Route("")]
         public async Task<ActionResult<Room>> CreateRoom([FromBody] Room newRoom)
         {
+            if (newRoom == null)
+            {
+                return BadRequest();
+            }
             var createdRoom = await _service.Create(newRoom);
 
             if (createdRoom == null)
@@ -63,7 +66,7 @@ namespace api.Controllers
         [HttpDelete, Produces("application/json"), Route("{roomNumber}")]
         public async Task<IActionResult> DeleteRoom(string roomNumber)
         {
-            if (roomNumber.Length != 3)
+            if (string.IsNullOrEmpty(roomNumber) || roomNumber.Length != 3)
             {
                 return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
             }

@@ -16,17 +16,20 @@ namespace api.Shared.Services
         private readonly ILogger<ReservationService> _logger;
         private readonly IGuestService _guestService;
         private readonly IDbConnection _connection;
+        private readonly IRoomService _roomService;
         private readonly IReservationRepository _repository;
 
         public ReservationService(ILogger<ReservationService> logger,
             IGuestService service,
             IDbConnection connection,
+            IRoomService roomService,
             IReservationRepository repository)
         {
-            _logger = logger;
-            _guestService = service;
-            _connection = connection;
-            _repository = repository;
+            _logger = logger.ThrowIfNull(nameof(ILogger<ReservationService>));
+            _guestService = service.ThrowIfNull(nameof(IGuestService));
+            _connection = connection.ThrowIfNull(nameof(IDbConnection));
+            _roomService = roomService.ThrowIfNull(nameof(IRoomService));
+            _repository = repository.ThrowIfNull(nameof(IReservationRepository));
         }
 
         public async Task<IEnumerable<Reservation>> Get()
@@ -71,9 +74,9 @@ namespace api.Shared.Services
                 trans.Commit();
                 return result;
             }
-            catch 
+            catch
             {
-                trans.Rollback(); 
+                trans.Rollback();
                 throw;
             }
         }
@@ -84,6 +87,32 @@ namespace api.Shared.Services
             if (result)
                 _logger?.LogInformation("Reservation <{@id}> created.", reservationId);
             return result;
+        }
+
+        public async Task<bool> CheckIn(Guid reservationId, string emailAddress)
+        {
+            if (_connection.State != ConnectionState.Open)
+                _connection.Open();
+            using var transaction = _connection.BeginTransaction();
+            try
+            {
+                var reservation = await GetByReservationId(reservationId);
+                if (reservation.GuestEmail != emailAddress)
+                    throw new NotFoundException($"Reservation not found for guest email address {emailAddress}!");
+                if (reservation.CheckedIn)
+                    throw new BadRequestException("Guest already checked in.");
+                var roomStatusResult = await _roomService.UpdateRoomStatus(reservation.RoomNumber, Constants.State.Occupied, transaction);
+                var result = roomStatusResult ? await _repository.CheckIn(reservationId, emailAddress, transaction) : roomStatusResult;
+                if (!result)
+                    throw new Exception("Check in failed!");
+                transaction.Commit();
+                return result;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
         }
     }
 }

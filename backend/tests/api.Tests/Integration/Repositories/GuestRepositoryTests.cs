@@ -69,5 +69,29 @@ namespace api.Tests.Integration
             Assert.True(result);
             await Assert.ThrowsAsync<NotFoundException>(() => _guestRepository.GetGuestByEmail(guest.Email));
         }
+
+        [Fact]
+        public async Task ConfirmAccount_ShouldSucceed()
+        {
+            // Arrange
+            var guest = new Guest { Email = "guestsucceed@example.com", Name = "Guest" };
+            await _guestRepository.CreateGuest(guest);
+
+            // Act
+            var result = await _guestRepository.ConfirmAccount(guest.Email);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task ConfirmAccount_ShouldFail()
+        {
+            // Act
+            var result = await _guestRepository.ConfirmAccount("guest@guest.com");
+
+            // Assert
+            Assert.False(result);
+        }
     }
 }

@@ -19,6 +19,12 @@ namespace api.Shared.Models.Domain
         /// </summary>
         public string? Surname { get; set; }
 
+
+        /// <summary>
+        /// If user validated their Email address.
+        /// </summary>
+        public bool IsValidated { get; set; }
+
         /// <summary>
         /// Will return either the Surname, if available, or the whole name.
         /// </summary>

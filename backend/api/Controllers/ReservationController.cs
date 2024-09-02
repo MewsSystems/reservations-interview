@@ -1,3 +1,5 @@
+using api.Authorization;
+using api.Models;
 using api.Shared.Models.Domain;
 using api.Shared.Models.Errors;
 using api.Shared.Services;
@@ -50,7 +52,7 @@ namespace api.Controllers
             {
                 newBooking.Id = Guid.NewGuid();
             }
- 
+
             var createdReservation = await _service.Create(newBooking);
             return Created($"/reservation/${createdReservation.Id}", createdReservation);
         }
@@ -61,6 +63,16 @@ namespace api.Controllers
             var result = await _service.Delete(reservationId);
 
             return result ? NoContent() : NotFound();
+        }
+
+        [CookieAuthorization]
+        [HttpPatch, Produces("application/json"), Route("")]
+        public async Task<IActionResult> CheckIn([FromBody] CheckInRequest request)
+        {
+            if (request == null || request.Id == Guid.Empty || string.IsNullOrEmpty(request.GuestEmail))
+                return BadRequest();
+            var result = await _service.CheckIn(request.Id, request.GuestEmail);
+            return Json(new { Success = result });
         }
     }
 }

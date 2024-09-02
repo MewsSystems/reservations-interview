@@ -1,5 +1,8 @@
-﻿using api.Shared.Models.DB;
+﻿using api.Shared.Constants;
+using api.Shared.Models.DB;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace api.Shared.Repositories
@@ -13,5 +16,7 @@ namespace api.Shared.Repositories
         Task<Room> CreateRoom(Room newRoom);
 
         Task<bool> DeleteRoom(int roomNumber);
+
+        Task<bool> UpdateRoomStatus(int roomNumber, State state, IDbTransaction? dbTransaction = null);
     }
 }

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
+using api.Shared.Constants;
 using api.Shared.Extensions;
 using api.Shared.Models.DB;
 using api.Shared.Models.Errors;
@@ -57,6 +58,16 @@ namespace api.Shared.Repositories.Dapper
                 new { roomNumber }
             );
             return deleted > 0;
+        }
+
+        public async Task<bool> UpdateRoomStatus(int roomNumber, State state, IDbTransaction? dbTransaction = null)
+        {
+            var updated = await _db.ExecuteAsync(
+                "UPDATE Rooms SET State = @state WHERE Number = @roomNumber;",
+                new { state, roomNumber },
+                dbTransaction
+            );
+            return updated > 0;
         }
     }
 }

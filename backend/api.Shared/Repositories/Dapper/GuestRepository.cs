@@ -62,5 +62,16 @@ namespace api.Shared.Repositories
 
             return count > 0;
         }
+
+        public async Task<bool> ConfirmAccount(string guestEmail, IDbTransaction? transaction = null)
+        {
+            var count = await _db.ExecuteAsync(
+                "UPDATE Guests SET IsValidated = 1 WHERE Email = @guestEmail;",
+                new { guestEmail },
+                transaction
+            );
+            return count > 0;
+        }
+
     }
 }

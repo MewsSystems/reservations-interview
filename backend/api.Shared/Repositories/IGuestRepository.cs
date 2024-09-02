@@ -11,6 +11,8 @@ namespace api.Shared.Repositories
 
         Task<Guest> GetGuestByEmail(string guestEmail);
 
+        Task<bool> ConfirmAccount(string guestEmail, IDbTransaction? transaction = null);
+
         Task<Guest> CreateGuest(Guest newGuest, IDbTransaction? transaction = null);
 
         Task<bool> DeleteGuestByEmail(string guestEmail);

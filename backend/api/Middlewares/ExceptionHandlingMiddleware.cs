@@ -13,10 +13,11 @@ public class ExceptionHandlingMiddleware
         _logger = logger;
         _exceptionHandlers = new Dictionary<Type, Func<Exception, HttpContext, Task>>
         {
-            { typeof(ReservationUnavailableException),  HandleValidationException},
-            { typeof(RoomAlreadyExistsException) , HandleValidationException },
-            { typeof(NotFoundException) , HandleValidationException },
-            { typeof(ServiceValidationException), HandleValidationException },
+            { typeof(BadRequestException), HandleBadRequestException },
+            { typeof(ReservationUnavailableException),  HandleBadRequestException},
+            { typeof(RoomAlreadyExistsException) , HandleBadRequestException },
+            { typeof(NotFoundException) , HandleBadRequestException },
+            { typeof(ServiceValidationException), HandleBadRequestException },
             { typeof(Exception), HandleGeneralException }
         };
     }
@@ -40,7 +41,7 @@ public class ExceptionHandlingMiddleware
         }
     }
 
-    private Task HandleValidationException(Exception ex, HttpContext context)
+    private Task HandleBadRequestException(Exception ex, HttpContext context)
     {
         _logger.LogInformation(ex, "A validation exception occurred.");
         context.Response.ContentType = "application/json";
