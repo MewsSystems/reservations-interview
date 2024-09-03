@@ -24,12 +24,7 @@ namespace api.Shared.Validation.Domain
                     (r.End - r.Start).TotalDays <= 30)
                 .WithMessage("Reservation must be between 1 day and 30 days.");
 
-            RuleFor(x => x.RoomNumber)
-                .NotNull().WithMessage("Room number cannot be null.")
-                .NotEmpty().WithMessage("Room number cannot be empty.")
-                .Length(3).WithMessage("Room number must be exactly 3 digits.")
-                .Matches(@"^[0-9]{3}$").WithMessage("Room number must be exactly 3 digits.")
-                .Must(ValidateRoomNumber).WithMessage("Room number must be a valid three-digit number with a non-zero floor number and non-'00' door number.");
+            RuleFor(x => x.RoomNumber).SetValidator(new RoomNumberValidator());
         }
 
         private bool ValidateRoomNumber(string roomNumber)
