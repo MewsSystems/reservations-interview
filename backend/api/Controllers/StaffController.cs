@@ -1,4 +1,5 @@
 using api.Authorization;
+using api.Constants;
 using api.Models;
 using api.Shared.Services;
 using api.Utils;
@@ -42,7 +43,7 @@ namespace api.Controllers
 
             // Set secure cookie
             Response.Cookies.Append(
-                "access",
+                CookieConstants.CookieName,
                 encryptedValue,
                 new CookieOptions
                 {
@@ -50,13 +51,12 @@ namespace api.Controllers
                     SameSite = SameSiteMode.Strict,
                     HttpOnly = false, // We have to use this to use it in javascript
                     Secure = true,
-                    Expires = DateTimeOffset.UtcNow.AddHours(1)
+                    Expires = DateTimeOffset.UtcNow.AddMinutes(CookieConstants.DurationInMinutes)
                 }
             );
 
             return NoContent();
         }
-
 
         [CookieAuthorization]
         [HttpGet, Route("reservation")]

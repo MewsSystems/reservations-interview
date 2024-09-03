@@ -1,4 +1,5 @@
-﻿using api.Models;
+﻿using api.Constants;
+using api.Models;
 using api.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -13,7 +14,7 @@ namespace api.Authorization
             var httpContext = context.HttpContext;
             var config = httpContext.RequestServices.GetService<IConfiguration>();
 
-            httpContext.Request.Cookies.TryGetValue("access", out string? accessValue);
+            httpContext.Request.Cookies.TryGetValue(CookieConstants.CookieName, out string? accessValue);
             var configuredSecret = config?.GetValue<string>("staffAccessCode");
             var encryptionKey = config?.GetValue<string>("encryptionKey");
             if (accessValue != null && !string.IsNullOrEmpty(encryptionKey) && !string.IsNullOrEmpty(configuredSecret))
@@ -22,7 +23,8 @@ namespace api.Authorization
                 {
                     var decryptedString = Encryption.AES.Decrypt(accessValue, encryptionKey);
                     var cookieValue = JsonSerializer.Deserialize<CookieValue>(decryptedString);
-                    if (!string.IsNullOrEmpty(cookieValue?.AccessCode) && cookieValue.AccessCode == configuredSecret)
+                    if (!string.IsNullOrEmpty(cookieValue?.AccessCode) && cookieValue.AccessCode == configuredSecret && 
+                        cookieValue.Ticks <= DateTime.Now.AddMinutes(CookieConstants.DurationInMinutes).Ticks)
                     {
                         return;
                     }
@@ -32,7 +34,7 @@ namespace api.Authorization
 
                 }
                 // If invalid cookie remove it...
-                httpContext.Response.Cookies.Delete("access");
+                httpContext.Response.Cookies.Delete(CookieConstants.CookieName);
             }
             context.Result = new UnauthorizedResult();
         }
