@@ -12,7 +12,7 @@ const queryClient = new QueryClient();
 const reactRoot = ReactDOM.createRoot(root);
 reactRoot.render(
   <React.StrictMode>
-    <Theme accentColor="mint">
+    <Theme accentColor="mint" style={{ display: 'flex', flexDirection: 'row' }}>
       <QueryClientProvider client={queryClient}>
         <App />
         <Toaster />
