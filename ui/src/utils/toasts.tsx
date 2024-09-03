@@ -9,6 +9,14 @@ const DEFAULT_TOAST_OPTIONS: ExternalToast = {
   duration: DEFAULT_TOAST_DURATION_MS,
 };
 
+
+export function showSuccessToast(message: string) {
+  toast.custom(
+    (t) => <SuccessToast toastId={t} message={message} />,
+    DEFAULT_TOAST_OPTIONS,
+  )
+}
+
 export function useShowSuccessToast(message: string) {
   return useCallback(
     () =>

@@ -1,0 +1,13 @@
+# Visual studio
+.vs
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+[Bb]in/
+[Oo]bj/
+
+reservations.db
+reservations.db-shm
+reservations.db-wal

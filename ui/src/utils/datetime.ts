@@ -1,5 +1,7 @@
 // create a branded iso8601 type to ensure C# can decode this
 
+import { formatISO, parseISO } from 'date-fns';
+
 const DateTimeSym: unique symbol = Symbol.for("utils/datetime/iso8601");
 type DateTimeSym = typeof DateTimeSym;
 
@@ -14,7 +16,7 @@ export type ISO8601String = {
 function fromDate(date: Date): ISO8601String {
   return {
     [DateTimeSym]: "utils/datetime/iso8601",
-    _value: date.toISOString(),
+    _value: formatISO(date, { representation: 'date' }),
     _dateValue: date,
   };
 }
@@ -22,7 +24,7 @@ function fromDate(date: Date): ISO8601String {
 /** Uses Date.parse to get our branded type */
 export function fromDateStringToIso(dateTime: string | Date): ISO8601String {
   const parsedTimestamp =
-    typeof dateTime === "string" ? Date.parse(dateTime) : dateTime.valueOf();
+    typeof dateTime === "string" ? parseISO(dateTime) : dateTime.valueOf();
   if (Number.isNaN(parsedTimestamp)) {
     throw new Error("Invalid date time string.");
   }

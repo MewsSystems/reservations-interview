@@ -29,13 +29,17 @@ export function bookRoom(booking: NewReservation) {
     End: toIsoStr(booking.End),
   };
 
-  // TODO post some json with ky.post()
-  return Promise.resolve<Reservation>(newReservation as any as Reservation);
+  return ky.post('/api/reservation', {
+    json: newReservation,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  }).json<Reservation>();
 }
 
 const RoomSchema = z.object({
   number: z.string(),
-  state: z.number(),
+  state: z.string(),
 });
 
 const RoomListSchema = RoomSchema.array();

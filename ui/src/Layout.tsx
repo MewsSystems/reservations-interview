@@ -1,4 +1,4 @@
-import { Box, Text } from "@radix-ui/themes";
+import { Box, Flex, Text } from "@radix-ui/themes";
 import { Link, Outlet } from "@tanstack/react-router";
 import React from "react";
 
@@ -13,7 +13,7 @@ const UNDERLINE_HEADING: React.CSSProperties = {
 
 export const Layout = () => {
   return (
-    <Box p="0" m="0">
+    <Flex p="0" m="0" style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
       <Box width="100%" style={TOP_BAR_ACCENT_BACKGROUND} py="4" pl="4">
         <Link title="Go Home" to="/">
           <Text size="8" style={UNDERLINE_HEADING}>
@@ -22,6 +22,6 @@ export const Layout = () => {
         </Link>
       </Box>
       <Outlet />
-    </Box>
+    </Flex>
   );
 };

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useShowSuccessToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
-import { ReservationCard } from "./ReservationCard";
+import { ReservationCard } from "../components/ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
@@ -45,7 +45,8 @@ export function ReservationPage() {
             <ReservationCard
               key={room.number}
               imgSrc="/bed.png"
-              roomNumber={room.number}
+              title={`Room #${room.number}`}
+              subTitle={`State: ${room.state}`}
               onClick={createClickHandler(room.number)}
             />
           ))}
