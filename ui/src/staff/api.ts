@@ -52,7 +52,8 @@ const StaffReservationSchema = z.object({
     start: z.string().transform((str) => new Date(str)),
     end: z.string().transform((str) => new Date(str)),
     checkedIn: z.boolean(),
-    checkedOut: z.boolean()
+    checkedOut: z.boolean(),
+    state: z.enum(['Ready', 'Occupied', 'Dirty']),
 });
 
 const StaffReservationSchemaListSchema = StaffReservationSchema.array();
@@ -66,7 +67,7 @@ export function useGetStaffReservations() {
 
 const RoomSchema = z.object({
     number: z.string(),
-    state: z.enum(['Ready', 'Occupied', 'Maintenance', 'OutOfOrder']),
+    state: z.enum(['Ready', 'Occupied', 'Dirty']),
 });
 
 const ErrorRoomCreateResponseSchema = z.object({

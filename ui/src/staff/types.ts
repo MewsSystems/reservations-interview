@@ -1,4 +1,4 @@
-export type RoomState = 'Ready' | 'Occupied' | 'Maintenance' | 'OutOfOrder'
+export type RoomState = 'Ready' | 'Occupied' | 'Dirty'
 
 export type ImportState = 'init' | 'processing' | 'error' | 'processing-completed' | 'importing' | 'importing-completed'
 

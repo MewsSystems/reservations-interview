@@ -30,9 +30,14 @@ namespace api.Shared.Repositories
             return reservations;
         }
 
-        public async Task<IEnumerable<Reservation>> GetStaffReservations()
+        public async Task<IEnumerable<ReservationWithRoomState>> GetStaffReservations()
         {
-            var reservations = await _db.QueryAsync<Reservation>("SELECT * FROM Reservations WHERE Start >= DATE('now')");
+            var reservations = await _db.QueryAsync<ReservationWithRoomState>(@"
+                SELECT Reservations.*, Rooms.State 
+                FROM Reservations 
+                JOIN Rooms on Rooms.Number = Reservations.RoomNumber 
+                WHERE Start >= DATE('now')
+            ");
 
             if (reservations == null)
             {

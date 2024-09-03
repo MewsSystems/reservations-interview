@@ -262,9 +262,11 @@ namespace api.Tests.Services
             var transactionMock = new Mock<IDbTransaction>();
             transactionMock.Setup(x => x.Commit());
             _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
-            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Dirty, transactionMock.Object))
                 .ReturnsAsync(false);
             _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
+            _mockRoomService.Setup(roomService => roomService.GetByRoomNumber(reservation.RoomNumber))
+                .ReturnsAsync(new Room() { Number = reservation.RoomNumber });
             _mockRepository.Setup(repo => repo.GetReservation(reservation.Id)).ReturnsAsync(reservation.FromDomain());
             _mockRepository.Setup(repo => repo.CheckIn(reservation.Id, reservation.GuestEmail, transactionMock.Object))
                 .ReturnsAsync(false);
@@ -292,8 +294,10 @@ namespace api.Tests.Services
             var transactionMock = new Mock<IDbTransaction>();
             transactionMock.Setup(x => x.Commit());
             _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
-            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Dirty, transactionMock.Object))
                 .ReturnsAsync(false);
+            _mockRoomService.Setup(roomService => roomService.GetByRoomNumber(reservation.RoomNumber))
+                .ReturnsAsync(new Room() { Number = reservation.RoomNumber });
             _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
             _mockRepository.Setup(repo => repo.GetReservation(reservation.Id)).ReturnsAsync(reservation.FromDomain());
 
@@ -320,7 +324,7 @@ namespace api.Tests.Services
             var transactionMock = new Mock<IDbTransaction>();
             transactionMock.Setup(x => x.Commit());
             _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
-            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Dirty, transactionMock.Object))
                 .ReturnsAsync(true);
             _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
             _mockRepository.Setup(repo => repo.GetReservation(reservation.Id)).ReturnsAsync(reservation.FromDomain());
@@ -348,7 +352,7 @@ namespace api.Tests.Services
             var transactionMock = new Mock<IDbTransaction>();
             transactionMock.Setup(x => x.Commit());
             _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
-            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Occupied, transactionMock.Object))
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(reservation.RoomNumber, State.Dirty, transactionMock.Object))
                 .ReturnsAsync(true);
             _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
             _mockRepository.Setup(repo => repo.GetReservation(reservation.Id))
@@ -360,7 +364,7 @@ namespace api.Tests.Services
         }
 
         [Fact]
-        public async Task CheckIn_ShouldFail_WhenWrongEmailAddress()
+        public async Task CheckIn_ShouldPass_WhenCorrectData()
         {
             // Arrange
             var validReservation = new Reservation
@@ -377,8 +381,10 @@ namespace api.Tests.Services
             var transactionMock = new Mock<IDbTransaction>();
             transactionMock.Setup(x => x.Commit());
             _connectionMock.Setup(conn => conn.BeginTransaction()).Returns(transactionMock.Object);
-            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(validReservation.RoomNumber, State.Occupied, transactionMock.Object))
+            _mockRoomService.Setup(roomService => roomService.UpdateRoomStatus(validReservation.RoomNumber, State.Dirty, transactionMock.Object))
                 .ReturnsAsync(true);
+            _mockRoomService.Setup(roomService => roomService.GetByRoomNumber(validReservation.RoomNumber))
+                .ReturnsAsync(new Room() { Number = validReservation.RoomNumber });
             _connectionMock.Setup(conn => conn.BeginTransaction(It.IsAny<IsolationLevel>())).Returns(transactionMock.Object);
             _mockRepository.Setup(repo => repo.GetReservation(validReservation.Id))
                 .ReturnsAsync(validReservation.FromDomain());

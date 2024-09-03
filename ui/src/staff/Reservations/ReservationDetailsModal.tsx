@@ -2,6 +2,7 @@ import * as Label from '@radix-ui/react-label';
 import { Box, Separator, Dialog, Button } from "@radix-ui/themes";
 import { useEffect, useMemo, useState } from 'react';
 import { getUserAccount } from '../api';
+import { RoomState } from '../types';
 
 export type ReservationDetailsProps = {
     id: string,
@@ -12,6 +13,7 @@ export type ReservationDetailsProps = {
     end: Date,
     checkedIn: boolean,
     checkedOut: boolean,
+    state: RoomState,
     onCheckIn: (props: ReservationDetailsProps) => void
 }
 
@@ -44,8 +46,8 @@ export const ReservationDetailsModal = (props: ReservationDetailsProps) => {
 
 export const ReservationDetailsForm = (props: ReservationDetailsProps) => {
     var checkInDisabled = useMemo(() =>
-        props.checkedIn || props.start.getDate() != new Date().getDate() || props.guestConfirmedAccount == false
-        , [props.checkedIn || props.start, props.guestConfirmedAccount])
+        props.state == 'Dirty' || props.start.getDate() != new Date().getDate() || props.guestConfirmedAccount == false
+        , [props.state, props.start, props.guestConfirmedAccount])
 
     return (
         <Box style={{ position: "relative", minHeight: 700 }}>
@@ -69,15 +71,14 @@ export const ReservationDetailsForm = (props: ReservationDetailsProps) => {
                 <Box style={{ fontSize: '1rem', fontWeight: 'bold' }}>{props.end.toLocaleDateString()}</Box>
             </Box>
 
-            {!props.checkedIn ?
-                <Button disabled={checkInDisabled}
-                    style={{ cursor: !checkInDisabled ? 'pointer' : 'default' }}
-                    onClick={() => props.onCheckIn(props)}>Check In user</Button>
-                :
-                (<Box mb="4">
-                    <Label.Root>Checked In</Label.Root>
-                    <Box style={{ fontSize: '1rem', fontWeight: 'bold' }}>Yes</Box>
-                </Box>)}
+            <Box mb="4">
+                <Label.Root>Checked In</Label.Root>
+                <Box style={{ fontSize: '1rem', fontWeight: 'bold' }}>{props.checkedIn ? 'Yes' : 'No'}</Box>
+            </Box>
+
+            <Button disabled={checkInDisabled}
+                style={{ cursor: !checkInDisabled ? 'pointer' : 'default' }}
+                onClick={() => props.onCheckIn(props)}>Check In user</Button>
         </Box>
     );
 }

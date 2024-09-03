@@ -37,7 +37,7 @@ namespace api.Shared.Services
             return (await _repository.GetReservations()).ToDomain();
         }
 
-        public async Task<IEnumerable<Reservation>> GetStaffReservations()
+        public async Task<IEnumerable<ReservationWithRoomState>> GetStaffReservations()
         {
             return (await _repository.GetStaffReservations()).ToDomain();
         }
@@ -101,7 +101,10 @@ namespace api.Shared.Services
                     throw new NotFoundException($"Reservation not found for guest email address {emailAddress}!");
                 if (reservation.CheckedIn)
                     throw new BadRequestException("Guest already checked in.");
-                var roomStatusResult = await _roomService.UpdateRoomStatus(reservation.RoomNumber, Constants.State.Occupied, transaction);
+                var room = await _roomService.GetByRoomNumber(reservation.RoomNumber);
+                if (room.State == Constants.State.Dirty)
+                    throw new BadRequestException("Cannot check in Guest to dirty room!");
+                var roomStatusResult = await _roomService.UpdateRoomStatus(reservation.RoomNumber, Constants.State.Dirty, transaction);
                 var result = roomStatusResult ? await _repository.CheckIn(reservationId, emailAddress, transaction) : roomStatusResult;
                 if (!result)
                     throw new Exception("Check in failed!");

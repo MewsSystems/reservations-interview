@@ -8,6 +8,55 @@ namespace api.Shared.Extensions
     /// </summary>
     public static class ModelExtensions
     {
+        #region ReservationWithRoomState
+
+        public static Models.DB.ReservationWithRoomState FromDomain(this Models.Domain.ReservationWithRoomState reservation)
+        {
+            if (reservation == null)
+                throw new ArgumentNullException($"Cannot map null <{nameof(Models.DB.ReservationWithRoomState)}> object to db object.");
+            return new Models.DB.ReservationWithRoomState
+            {
+                Id = reservation.Id.ToString(),
+                RoomNumber = reservation.RoomNumber.ConvertRoomNumberToInt(),
+                GuestEmail = reservation.GuestEmail,
+                Start = reservation.Start,
+                End = reservation.End,
+                CheckedIn = reservation.CheckedIn,
+                CheckedOut = reservation.CheckedOut,
+                State = reservation.State
+            };
+        }
+
+        public static Models.Domain.ReservationWithRoomState ToDomain(this Models.DB.ReservationWithRoomState reservation)
+        {
+            if (reservation == null)
+                throw new ArgumentNullException($"Cannot map null <{nameof(Models.DB.ReservationWithRoomState)}> object to domain object.");
+            return new Models.Domain.ReservationWithRoomState
+            {
+                Id = Guid.Parse(reservation.Id),
+                RoomNumber = reservation.RoomNumber.FormatRoomNumber(),
+                GuestEmail = reservation.GuestEmail,
+                Start = reservation.Start,
+                End = reservation.End,
+                CheckedIn = reservation.CheckedIn,
+                CheckedOut = reservation.CheckedOut,
+                State = reservation.State
+            };
+        }
+        public static IEnumerable<Models.Domain.ReservationWithRoomState> ToDomain(this IEnumerable<Models.DB.ReservationWithRoomState> reservations)
+        {
+            var result = new List<Models.Domain.ReservationWithRoomState>();
+            if (reservations == null)
+                return result;
+            foreach (var reservation in reservations)
+            {
+                result.Add(ToDomain(reservation));
+            }
+            return result;
+        }
+
+        #endregion Reservation
+
         #region Reservation
 
         public static Models.DB.Reservation FromDomain(this Models.Domain.Reservation reservation)

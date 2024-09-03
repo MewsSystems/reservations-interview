@@ -135,13 +135,13 @@ export const ImportRooms = () => {
         }
 
         const isValidRoomState = (state: any): state is RoomState => {
-            const validStates: RoomState[] = ['Ready', 'Occupied', 'Maintenance', 'OutOfOrder'];
+            const validStates: RoomState[] = ['Ready', 'Occupied', 'Dirty'];
             return validStates.includes(state);
         };
 
         rooms.forEach((room, index) => {
             if (!isValidRoomState(room?.state)) {
-                errors.push(`Row ${index + 1}: Invalid room state: '${room.state}'. Use values ['Ready', 'Occupied', 'Maintenance', 'OutOfOrder']...`);
+                errors.push(`Row ${index + 1}: Invalid room state: '${room.state}'. Use values ['Ready', 'Occupied', 'Dirty']...`);
                 return;
             }
             const roomErrors = validateRoomNumber(room?.number);

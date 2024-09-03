@@ -10,7 +10,7 @@ namespace api.Shared.Services
     {
         Task<IEnumerable<Reservation>> Get();
 
-        Task<IEnumerable<Reservation>> GetStaffReservations();
+        Task<IEnumerable<ReservationWithRoomState>> GetStaffReservations();
 
         Task<Reservation> GetByReservationId(Guid reservationId);
 

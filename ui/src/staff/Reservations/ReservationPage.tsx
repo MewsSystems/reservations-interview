@@ -18,13 +18,18 @@ export function StaffReservationPage() {
     const [selectedReservation, setSelectedReservation] = useState<ReservationDetailsProps | null>(null);
     const showCheckinSuccess = useShowSuccessToast("Check in successful!");
     const showCheckinFailed = useShowInfoToast("Check in failed.");
+    const showCannotCheckinDirty = useShowInfoToast("Cannot check in guest in dirty room.");
 
     function onClose() {
         setSelectedReservation(null);
     }
 
     function onCheckIn(reservation: ReservationDetailsProps) {
-        patchReservation(reservation.id, reservation.guestEmail)
+        if (reservation.state == 'Dirty') {
+            showCannotCheckinDirty();
+            return;
+        }
+        return patchReservation(reservation.id, reservation.guestEmail)
             .then((x) => {
                 onClose();
                 refetch();
@@ -54,7 +59,7 @@ export function StaffReservationPage() {
                             key={reservation.id}
                             imgSrc="/bed.png"
                             title={`Room #${reservation.roomNumber}`}
-                            subTitle={`${reservation.start.toLocaleDateString()} - ${reservation.end.toLocaleDateString()}`}
+                            subTitle={`${reservation.start.toLocaleDateString()} - ${reservation.end.toLocaleDateString()} - ${reservation.state}`}
                             onClick={() => {
                                 if (selectedReservation != reservation)
                                     setSelectedReservation(reservation as ReservationDetailsProps)

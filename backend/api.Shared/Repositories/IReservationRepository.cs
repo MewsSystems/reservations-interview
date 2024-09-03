@@ -23,7 +23,7 @@ namespace api.Shared.Repositories
 
         Task<bool> DeleteReservation(Guid reservationId);
 
-        Task<IEnumerable<Reservation>> GetStaffReservations();
+        Task<IEnumerable<ReservationWithRoomState>> GetStaffReservations();
 
         Task<bool> CheckIn(Guid reservationId, string emailAddress, IDbTransaction? dbTransaction = null);
     }

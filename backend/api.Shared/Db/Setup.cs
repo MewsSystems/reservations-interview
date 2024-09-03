@@ -60,15 +60,19 @@ namespace api.Shared.Db
             $@"
                 SELECT COUNT(*)
                 FROM pragma_table_info('Guests')
-                WHERE name = 'IsValidated';
+                WHERE name = '{nameof(Guest.IsValidated)}';
             ");
 
             if (columnExists == 0)
             {
                 db.Execute(
-                    $@"ALTER TABLE Guests ADD COLUMN IsValidated INT NOT NULL DEFAULT 0;"
+                    $@"ALTER TABLE Guests ADD COLUMN {nameof(Guest.IsValidated)} INT NOT NULL DEFAULT 0;"
                 );
             }
+
+            db.Execute(
+                $@"UPDATE Rooms SET State = 2 WHERE Number in (SELECT RoomNumber from Reservations WHERE CheckedIn = 1);"
+            );
         }
     }
 }

@@ -62,7 +62,8 @@ namespace api.Controllers
         [HttpGet, Route("reservation")]
         public async Task<IActionResult> GetReservations()
         {
-            return Json(await _reservationService.GetStaffReservations());
+            var result = await _reservationService.GetStaffReservations();
+            return Json(result);
         }
 
         [CookieAuthorization]
