@@ -46,6 +46,7 @@ export function ReservationPage() {
               key={room.number}
               imgSrc="/bed.png"
               title={`Room #${room.number}`}
+              subTitle={`State: ${room.state}`}
               onClick={createClickHandler(room.number)}
             />
           ))}

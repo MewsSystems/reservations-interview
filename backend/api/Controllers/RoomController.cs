@@ -1,3 +1,4 @@
+using api.Models;
 using api.Shared.Models.Domain;
 using api.Shared.Models.Errors;
 using api.Shared.Services;
@@ -8,11 +9,13 @@ namespace api.Controllers
     [Tags("Rooms"), Route("room")]
     public class RoomController : Controller
     {
-        private IRoomService _service { get; set; }
+        private IRoomService _service;
+        private ILogger _logger;
 
-        public RoomController(IRoomService service)
+        public RoomController(IRoomService service, ILogger<RoomController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
@@ -61,6 +64,22 @@ namespace api.Controllers
             }
 
             return Json(createdRoom);
+        }
+
+        [HttpPost, Produces("application/json"), Route("import")]
+        public async Task<ActionResult<(IEnumerable<Room> success, IEnumerable<ErrorRoomCreateResponse> fail)>> CreateRooms(
+            [FromBody] Room[] rooms, CancellationToken cancellationToken = default)
+        {
+            if (rooms == null || rooms.Length == 0 || rooms.Length > 500)
+            {
+                return BadRequest();
+            }
+            var (success, fail) = await _service.CreateInBatch(rooms);
+            return Json(new RoomImportResult
+            {
+                Success = success,
+                Fail = fail
+            });
         }
 
         [HttpDelete, Produces("application/json"), Route("{roomNumber}")]

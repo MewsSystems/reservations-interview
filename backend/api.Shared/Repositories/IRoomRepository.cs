@@ -2,7 +2,6 @@
 using api.Shared.Models.DB;
 using System.Collections.Generic;
 using System.Data;
-using System.Data.Common;
 using System.Threading.Tasks;
 
 namespace api.Shared.Repositories
@@ -11,11 +10,11 @@ namespace api.Shared.Repositories
     {
         Task<IEnumerable<Room>> GetRooms();
 
-        Task<Room> GetRoom(int roomNumber);
+        Task<Room> GetRoom(int roomNumber, IDbConnection? connection = null, IDbTransaction? transaction = null);
 
-        Task<Room> CreateRoom(Room newRoom);
+        Task<Room> CreateRoom(Room newRoom, IDbConnection? connection = null, IDbTransaction? transaction = null);
 
-        Task<bool> DeleteRoom(int roomNumber);
+        Task<bool> DeleteRoom(int roomNumber, IDbTransaction? dbTransaction = null);
 
         Task<bool> UpdateRoomStatus(int roomNumber, State state, IDbTransaction? dbTransaction = null);
     }

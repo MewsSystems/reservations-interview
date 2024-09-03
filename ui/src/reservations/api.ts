@@ -39,7 +39,7 @@ export function bookRoom(booking: NewReservation) {
 
 const RoomSchema = z.object({
   number: z.string(),
-  state: z.number(),
+  state: z.string(),
 });
 
 const RoomListSchema = RoomSchema.array();

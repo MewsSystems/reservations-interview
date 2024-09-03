@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Threading.Tasks;
 using api.Shared.Constants;
 using api.Shared.Extensions;
@@ -18,11 +19,13 @@ namespace api.Shared.Repositories.Dapper
             _db = db.ThrowIfNull(nameof(IDbConnection));
         }
 
-        public async Task<Room> GetRoom(int roomNumber)
+        public async Task<Room> GetRoom(int roomNumber, IDbConnection? connection = null, IDbTransaction? transaction = null)
         {
-            var room = await _db.QueryFirstOrDefaultAsync<Room>(
+            var conn = connection ?? _db;
+            var room = await conn.QueryFirstOrDefaultAsync<Room>(
                 "SELECT * FROM Rooms WHERE Number = @roomNumber;",
-                new { roomNumber }
+                new { roomNumber },
+                transaction
             );
             // I don't like this, I would rather support nullable
             if (room == null)
@@ -42,30 +45,33 @@ namespace api.Shared.Repositories.Dapper
             return rooms;
         }
 
-        public async Task<Room> CreateRoom(Room newRoom)
+        public async Task<Room> CreateRoom(Room newRoom, IDbConnection? connection = null, IDbTransaction? transaction = null)
         {
-            var createdRoom = await _db.QuerySingleAsync<Room>(
+            var conn = connection ?? _db;
+            var createdRoom = await conn.QuerySingleAsync<Room>(
                 "INSERT INTO Rooms(Number, State) Values(@Number, @State) RETURNING *",
-                newRoom
+                newRoom,
+                transaction
             );
             return createdRoom;
         }
 
-        public async Task<bool> DeleteRoom(int roomNumber)
+        public async Task<bool> DeleteRoom(int roomNumber, IDbTransaction? transaction = null)
         {
             var deleted = await _db.ExecuteAsync(
                 "DELETE FROM Rooms WHERE Number = @roomNumber;",
-                new { roomNumber }
+                new { roomNumber },
+                transaction
             );
             return deleted > 0;
         }
 
-        public async Task<bool> UpdateRoomStatus(int roomNumber, State state, IDbTransaction? dbTransaction = null)
+        public async Task<bool> UpdateRoomStatus(int roomNumber, State state, IDbTransaction? transaction = null)
         {
             var updated = await _db.ExecuteAsync(
                 "UPDATE Rooms SET State = @state WHERE Number = @roomNumber;",
                 new { state, roomNumber },
-                dbTransaction
+                transaction
             );
             return updated > 0;
         }

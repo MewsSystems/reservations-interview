@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import ky from "ky";
 import { z } from "zod";
+import { Room, RoomState } from "./types";
 
 export async function login(accessCode: string, onSuccess: () => void, onError: () => void) {
     return ky.get('/api/staff/login', {
@@ -61,4 +62,29 @@ export function useGetStaffReservations() {
         queryKey: ["staff-reservation"],
         queryFn: () => ky.get("/api/staff/reservation").json().then(StaffReservationSchemaListSchema.parseAsync),
     });
+}
+
+const RoomSchema = z.object({
+    number: z.string(),
+    state: z.enum(['Ready', 'Occupied', 'Maintenance', 'OutOfOrder']),
+});
+
+const ErrorRoomCreateResponseSchema = z.object({
+    room: RoomSchema,
+    errorMessage: z.string(),
+});
+
+const PostRoomsSchema = z.object({
+    success: z.array(RoomSchema),
+    fail: z.array(ErrorRoomCreateResponseSchema),
+});
+
+export async function postRooms(rooms: Room[]) {
+    return ky.post('/api/room/import', {
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        json: rooms,
+        timeout: 30000
+    }).json().then(PostRoomsSchema.parseAsync);
 }

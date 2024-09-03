@@ -1,5 +1,5 @@
 using api.Shared.Constants;
-using api.Shared.Models.Errors;
+using System.Text.Json.Serialization;
 
 namespace api.Shared.Models.Domain
 {
@@ -18,6 +18,7 @@ namespace api.Shared.Models.Domain
         /// <summary>
         /// Whether the room is available for reservation
         /// </summary>
+        [JsonConverter(typeof(JsonStringEnumConverter))]
         public State State { get; set; } = State.Ready;
     }
 }
