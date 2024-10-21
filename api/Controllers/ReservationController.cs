@@ -1,3 +1,4 @@
+using api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
@@ -8,10 +9,14 @@ namespace Controllers
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller
     {
+        private readonly IReservationValidation _reservationValidation;
+        private readonly RoomRepository _roomRepository;
         private ReservationRepository _repo { get; set; }
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public ReservationController(ReservationRepository reservationRepository, IReservationValidation reservationValidation, RoomRepository roomRepository)
         {
+            _reservationValidation = reservationValidation;
+            _roomRepository = roomRepository;
             _repo = reservationRepository;
         }
 
@@ -47,6 +52,13 @@ namespace Controllers
             [FromBody] Reservation newBooking
         )
         {
+            // Validate booking
+            var validationResult = _reservationValidation.ValidateReservation(newBooking);
+            if (!string.IsNullOrEmpty(validationResult))
+            {
+                return BadRequest(validationResult);
+            }
+
             // Provide a real ID if one is not provided
             if (newBooking.Id == Guid.Empty)
             {
@@ -55,6 +67,9 @@ namespace Controllers
 
             try
             {
+                // GetRoom will throw in case room was not found
+                await _roomRepository.GetRoom(newBooking.RoomNumber);
+
                 var createdReservation = await _repo.CreateReservation(newBooking);
                 return Created($"/reservation/${createdReservation.Id}", createdReservation);
             }
