@@ -35,13 +35,48 @@ public class ReservationControllerTests : IClassFixture<CustomWebApplicationFact
         var httpContent = new StringContent(JsonSerializer.Serialize(expectedReservation), Encoding.UTF8, MediaTypeNames.Application.Json);
         var response = await client.PostAsync("api/reservation", httpContent);
         var content = await response.Content.ReadAsStringAsync();
-        var actualRreservation = JsonSerializer.Deserialize<Reservation>(content, _options);
 
         // Assert
         Assert.True(response.IsSuccessStatusCode, content);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var actualRreservation = JsonSerializer.Deserialize<Reservation>(content, _options);
         Assert.NotNull(actualRreservation);
         Assert.Equal(expectedReservation.GuestEmail, actualRreservation.GuestEmail);
         Assert.Equal(expectedReservation.RoomNumber, actualRreservation.RoomNumber);
+    }
+    
+    [Fact]
+    public async Task Reservations_Should_Not_Overlap()
+    {
+        // Arrange
+        var client = _factory.CreateClient();
+
+        var reservation1 = new Reservation
+        {
+            RoomNumber = "002",
+            GuestEmail = "test@test.it",
+            Start = DateTime.Now,
+            End = DateTime.Now.AddDays(2),
+        };
+        var httpContent = new StringContent(JsonSerializer.Serialize(reservation1), Encoding.UTF8, MediaTypeNames.Application.Json);
+        var response = await client.PostAsync("api/reservation", httpContent);
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.True(response.IsSuccessStatusCode, content);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+        var reservation2 = new Reservation
+        {
+            RoomNumber = "002",
+            GuestEmail = "test2@test.it",
+            Start = DateTime.Now,
+            End = DateTime.Now.AddDays(2),
+        };
+
+        // Act
+        httpContent = new StringContent(JsonSerializer.Serialize(reservation2), Encoding.UTF8, MediaTypeNames.Application.Json);
+        response = await client.PostAsync("api/reservation", httpContent);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 }

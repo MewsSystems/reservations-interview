@@ -59,6 +59,13 @@ namespace Controllers
                 return BadRequest(validationResult);
             }
 
+            // prevent double bookings
+            var reservations = await _reservationRepository.GetReservations();
+            if (reservations.Where(r => r.RoomNumber == newBooking.RoomNumber).Any(reservation => reservation.Overlaps(newBooking)))
+            {
+                return Conflict("Reservation overlaps");
+            }
+            
             // Provide a real ID if one is not provided
             if (newBooking.Id == Guid.Empty)
             {
