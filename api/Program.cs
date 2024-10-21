@@ -1,4 +1,5 @@
 using System.Data;
+using api.Services;
 using Db;
 using Microsoft.Data.Sqlite;
 using Repositories;
@@ -14,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
     Services.AddSingleton(_ => new SqliteConnection(connectionString));
     Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
+    Services.AddSingleton<IReservationValidation, ReservationValidation>();
     Services.AddSingleton<GuestRepository>();
     Services.AddSingleton<RoomRepository>();
     Services.AddSingleton<ReservationRepository>();
@@ -50,3 +52,6 @@ var app = builder.Build();
 }
 
 app.Run();
+
+// Necessary for internal visibility in integration tests
+public partial class Program { }

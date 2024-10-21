@@ -1,14 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
+using Repositories;
 
 namespace Controllers
 {
     [Route("staff")]
     public class StaffController : Controller
     {
+        private readonly ReservationRepository _reservationRepository;
         private IConfiguration Config { get; set; }
 
-        public StaffController(IConfiguration config)
+        public StaffController(IConfiguration config, ReservationRepository reservationRepository)
         {
+            _reservationRepository = reservationRepository;
             Config = config;
         }
 
@@ -16,6 +19,7 @@ namespace Controllers
         /// Checks if the request is from a staff member, if not returns true and a 403 result
         /// </summary>
         /// <param name="request"></param>
+        /// <param name="result"></param>
         private bool IsNotStaff(HttpRequest request, out IActionResult? result)
         {
             // TODO explore UseAuthentication
@@ -64,6 +68,27 @@ namespace Controllers
             }
 
             return Ok("Authorized");
+        }
+
+        /// <summary>
+        /// View all reservations that are for today or in the future.
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet, Route("reservations")]
+        public async Task<IActionResult> GetReservations()
+        {
+            if (IsNotStaff(Request, out IActionResult? result))
+            {
+                return result!;
+            }
+
+            var reservations = await _reservationRepository.GetReservations();
+
+            // TODO: throws an error => Collection was modified; enumeration operation may not execute
+            // it might be useful to have a custom ITimeProvider
+            // var list = reservations.Where(r => r.Start >= DateTime.Today);
+
+            return Json(reservations);
         }
     }
 }

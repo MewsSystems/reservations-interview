@@ -15,5 +15,7 @@ namespace Models
         public DateTime End { get; set; }
         public bool CheckedIn { get; set; }
         public bool CheckedOut { get; set; }
+
+        public bool Overlaps(Reservation newReservation) => newReservation.Start < End && Start < newReservation.End;
     }
 }

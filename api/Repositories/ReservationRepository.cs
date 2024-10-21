@@ -49,10 +49,28 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
-            );
+            const string sql = """
+                               INSERT INTO Reservations (Id, RoomNumber, GuestEmail, Start, [End], CheckedIn, CheckedOut)
+                               VALUES (@Id, @RoomNumber, @GuestEmail, @Start, @End, @CheckedIn, @CheckedOut)
+                               """;
+
+            var affectedRows = await _db.ExecuteAsync(sql, new
+            {
+                newReservation.Id,
+                newReservation.RoomNumber,
+                newReservation.GuestEmail,
+                newReservation.Start,
+                newReservation.End,
+                newReservation.CheckedIn,
+                newReservation.CheckedOut
+            });
+
+            if (affectedRows == 0)
+            {
+                throw new InvalidOperationException("Create reservation failed. No rows were affected.");
+            }
+
+            return newReservation;
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)

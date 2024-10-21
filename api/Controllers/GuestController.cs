@@ -21,5 +21,19 @@ namespace Controllers
 
             return Json(guests);
         }
+
+        /// <summary>
+        /// Create a new guest
+        /// </summary>
+        /// <param name="newGuest"></param>
+        /// <returns></returns>
+        [HttpPost, Produces("application/json"), Route("")]
+        public async Task<ActionResult<Reservation>> CreateGuest(
+            [FromBody] Guest newGuest
+        )
+        {
+            await _repo.CreateGuest(newGuest);
+            return Created();
+        }
     }
 }
