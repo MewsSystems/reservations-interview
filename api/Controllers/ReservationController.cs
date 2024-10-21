@@ -11,19 +11,19 @@ namespace Controllers
     {
         private readonly IReservationValidation _reservationValidation;
         private readonly RoomRepository _roomRepository;
-        private ReservationRepository _repo { get; set; }
+        private ReservationRepository _reservationRepository;
 
         public ReservationController(ReservationRepository reservationRepository, IReservationValidation reservationValidation, RoomRepository roomRepository)
         {
             _reservationValidation = reservationValidation;
             _roomRepository = roomRepository;
-            _repo = reservationRepository;
+            _reservationRepository = reservationRepository;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
+            var reservations = await _reservationRepository.GetReservations();
 
             return Json(reservations);
         }
@@ -33,7 +33,7 @@ namespace Controllers
         {
             try
             {
-                var reservation = await _repo.GetReservation(reservationId);
+                var reservation = await _reservationRepository.GetReservation(reservationId);
                 return Json(reservation);
             }
             catch (NotFoundException)
@@ -70,7 +70,7 @@ namespace Controllers
                 // GetRoom will throw in case room was not found
                 await _roomRepository.GetRoom(newBooking.RoomNumber);
 
-                var createdReservation = await _repo.CreateReservation(newBooking);
+                var createdReservation = await _reservationRepository.CreateReservation(newBooking);
                 return Created($"/reservation/${createdReservation.Id}", createdReservation);
             }
             catch (Exception ex)
@@ -85,7 +85,7 @@ namespace Controllers
         [HttpDelete, Produces("application/json"), Route("{reservationId}")]
         public async Task<IActionResult> DeleteReservation(Guid reservationId)
         {
-            var result = await _repo.DeleteReservation(reservationId);
+            var result = await _reservationRepository.DeleteReservation(reservationId);
 
             return result ? NoContent() : NotFound();
         }
