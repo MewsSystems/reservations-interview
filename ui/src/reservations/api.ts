@@ -30,7 +30,6 @@ export async function bookRoom(booking: NewReservation) {
   };
 
   var json = await ky.post("api/reservation", { json: newReservation }).json();
-  console.log("here");
   var parsed = await ReservationSchema.parseAsync(json);
 
   return Promise.resolve<Reservation>(parsed as any as Reservation);
