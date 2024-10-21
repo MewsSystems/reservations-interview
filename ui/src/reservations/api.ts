@@ -12,16 +12,16 @@ export interface NewReservation {
 
 /** The schema the API returns */
 const ReservationSchema = z.object({
-  Id: z.string(),
-  RoomNumber: z.string(),
-  GuestEmail: z.string().email(),
-  Start: z.string(),
-  End: z.string(),
+  id: z.string(),
+  roomNumber: z.string(),
+  guestEmail: z.string().email(),
+  start: z.string(),
+  end: z.string(),
 });
 
 type Reservation = z.infer<typeof ReservationSchema>;
 
-export function bookRoom(booking: NewReservation) {
+export async function bookRoom(booking: NewReservation) {
   // unwrap branded types
   const newReservation = {
     ...booking,
@@ -29,8 +29,11 @@ export function bookRoom(booking: NewReservation) {
     End: toIsoStr(booking.End),
   };
 
-  // TODO post some json with ky.post()
-  return Promise.resolve<Reservation>(newReservation as any as Reservation);
+  var json = await ky.post("api/reservation", { json: newReservation }).json();
+  console.log("here");
+  var parsed = await ReservationSchema.parseAsync(json);
+
+  return Promise.resolve<Reservation>(parsed as any as Reservation);
 }
 
 const RoomSchema = z.object({
