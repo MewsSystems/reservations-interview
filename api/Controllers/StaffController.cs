@@ -84,8 +84,11 @@ namespace Controllers
 
             var reservations = await _reservationRepository.GetReservations();
 
+            // TODO: throws an error => Collection was modified; enumeration operation may not execute
             // it might be useful to have a custom ITimeProvider
-            return Json(reservations.Where(r => r.Start >= DateTime.Today));
+            // var list = reservations.Where(r => r.Start >= DateTime.Today);
+
+            return Json(reservations);
         }
     }
 }
