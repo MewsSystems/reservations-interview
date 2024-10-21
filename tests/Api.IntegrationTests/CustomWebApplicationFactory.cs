@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Db;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
@@ -13,9 +14,14 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
     {
         builder.ConfigureTestServices(services =>
         {
+            if (File.Exists("reservations.db"))
+            {
+                File.Delete("reservations.db");
+            }
             var sp = services.BuildServiceProvider();
 
             using var scope = sp.CreateScope();
+            Setup.EnsureDb(scope);
 
             var scopedServices = scope.ServiceProvider;
             var roomRepository = scopedServices.GetRequiredService<RoomRepository>();
@@ -25,6 +31,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>
             try
             {
                 guestRepository.CreateGuest(new Guest { Email = "test@test.it", Name = "test" }).GetAwaiter().GetResult();
+                guestRepository.CreateGuest(new Guest { Email = "test2@test.it", Name = "test2" }).GetAwaiter().GetResult();
                 for (var i = 0; i < 5; i++)
                 {
                     roomRepository.CreateRoom(new Room { Number = $"00{i}", State = State.Ready }).GetAwaiter().GetResult();
