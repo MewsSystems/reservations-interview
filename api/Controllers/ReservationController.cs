@@ -9,10 +9,16 @@ namespace Controllers
     public class ReservationController : Controller
     {
         private ReservationRepository _repo { get; set; }
+        private RoomRepository _roomRepo { get; set; }
+        private GuestRepository _guestRepo { get; set; }
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public static int MAX_DAYS = 30;
+
+        public ReservationController(ReservationRepository reservationRepository, RoomRepository roomRepo, GuestRepository guestRepo)
         {
             _repo = reservationRepository;
+            _roomRepo = roomRepo;
+            _guestRepo = guestRepo;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
@@ -46,7 +52,48 @@ namespace Controllers
         public async Task<ActionResult<Reservation>> BookReservation(
             [FromBody] Reservation newBooking
         )
-        {
+        {            
+            if (newBooking.Start >= newBooking.End)
+            {
+                ModelState.AddModelError(nameof(newBooking.End), "End date must be after start date.");
+            }
+
+            var duration = newBooking.End - newBooking.Start;
+            if (duration.TotalDays > MAX_DAYS)
+            {
+                ModelState.AddModelError(nameof(newBooking.End), $"Reservations cannot be longer than {MAX_DAYS} days.");
+            }
+
+            // TODO: consider validating that the dates is in future
+
+            if (!Room.IsValidRoomNumberString(newBooking.RoomNumber))
+            {
+                ModelState.AddModelError(nameof(newBooking.RoomNumber), $"Invalid room number.");
+            }
+
+            try
+            { 
+                await _roomRepo.GetRoom(newBooking.RoomNumber); 
+            }
+            catch (NotFoundException)
+            {
+                ModelState.AddModelError(nameof(newBooking.RoomNumber), $"Room doesn't exist.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            try
+            {
+                await _guestRepo.GetGuestByEmail(newBooking.GuestEmail);
+            }
+            catch (NotFoundException)
+            {
+                await _guestRepo.CreateGuest(new Guest { Email = newBooking.GuestEmail, Name = "" });
+            }
+
             // Provide a real ID if one is not provided
             if (newBooking.Id == Guid.Empty)
             {
