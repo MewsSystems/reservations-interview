@@ -64,7 +64,7 @@ namespace Controllers
                 ModelState.AddModelError(nameof(newBooking.End), $"Reservations cannot be longer than {MAX_DAYS} days.");
             }
 
-            // TODO: consider validating that the dates is in future
+            // TODO: consider validating that the dates are in future
 
             if (!Room.IsValidRoomNumberString(newBooking.RoomNumber))
             {

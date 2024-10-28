@@ -29,8 +29,7 @@ export function bookRoom(booking: NewReservation) {
     End: toIsoStr(booking.End),
   };
 
-  // TODO post some json with ky.post()
-  return Promise.resolve<Reservation>(newReservation as any as Reservation);
+  return ky.post("api/reservation", { json: newReservation });
 }
 
 const RoomSchema = z.object({

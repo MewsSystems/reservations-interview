@@ -40,6 +40,7 @@ namespace Models
             return roomNumberInt;
         }
 
+        // TODO: add tests
         public static bool IsValidRoomNumberString(string roomNumber)
         {
             if (roomNumber.Length != 3)

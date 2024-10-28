@@ -59,6 +59,7 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
   const showNoInfoToast = useShowInfoToast("Missing email or dates.");
 
   function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
+    // TODO: validate email
     if (!email || !dateRange[0] || !dateRange[1]) {
       showNoInfoToast();
       evt.preventDefault();
