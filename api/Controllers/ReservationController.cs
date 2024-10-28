@@ -85,6 +85,8 @@ namespace Controllers
                 return BadRequest(ModelState);
             }
 
+            // we check the same thing when creating the reservation in the database, but since the UI doesn't show 
+            // available rooms (yet), we can save a call to the repository by checking it here
             if (!await _repo.IsRoomAvailableForDates(int.Parse(newBooking.RoomNumber), newBooking.Start, newBooking.End))
             {
                 return BadRequest("Room is not available for the selected dates.");

@@ -65,10 +65,25 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
+            using var transaction = _db.BeginTransaction(IsolationLevel.Serializable);
+
+            var roomAvailable = await IsRoomAvailableForDates(
+                Room.ConvertRoomNumberToInt(newReservation.RoomNumber),
+                newReservation.Start,
+                newReservation.End
+            );
+
+            if (!roomAvailable)
+            {
+                throw new InvalidOperationException("Room is not available for the selected dates.");
+            }
+
             var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
                 "INSERT INTO Reservations(Id, GuestEmail, RoomNumber, Start, End) Values(@Id, @GuestEmail, @RoomNumber, @Start, @End) RETURNING *",
                 new ReservationDb(newReservation)
             );
+
+            transaction.Commit();
 
             return createdReservation.ToDomain();
         }
