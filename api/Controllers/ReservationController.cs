@@ -30,7 +30,7 @@ namespace Controllers
         }
 
         [HttpGet, Produces("application/json"), Route("{reservationId}")]
-        public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
+        public async Task<ActionResult<Reservation>> GetReservation(Guid reservationId)
         {
             try
             {
