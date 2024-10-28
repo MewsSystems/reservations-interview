@@ -47,6 +47,22 @@ namespace Repositories
             return reservation.ToDomain();
         }
 
+        // TODO: add summary
+        // TODO: add tests (possibly move the calculation to the domain model so that it is easier to test)
+        public async Task<bool> IsRoomAvailableForDates(int roomNumber, DateTime start, DateTime end)
+        {
+            var overlappingReservations = await _db.QueryAsync<ReservationDb>(
+                @"SELECT * FROM Reservations WHERE RoomNumber = @roomNumber AND (
+                    Start < @start AND @start < End OR
+                    Start < @end AND @end < End OR
+                    @start < Start AND End < @end OR
+                    Start < @start AND @end < End)",
+                new { roomNumber, start, end }
+            );
+
+            return overlappingReservations.Count() == 0;
+        }
+
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
             var createdReservation = await _db.QuerySingleAsync<ReservationDb>(

@@ -68,7 +68,7 @@ namespace Controllers
 
             if (!Room.IsValidRoomNumberString(newBooking.RoomNumber))
             {
-                ModelState.AddModelError(nameof(newBooking.RoomNumber), $"Invalid room number.");
+                ModelState.AddModelError(nameof(newBooking.RoomNumber), "Invalid room number.");
             }
 
             try
@@ -77,12 +77,17 @@ namespace Controllers
             }
             catch (NotFoundException)
             {
-                ModelState.AddModelError(nameof(newBooking.RoomNumber), $"Room doesn't exist.");
+                ModelState.AddModelError(nameof(newBooking.RoomNumber), "Room doesn't exist.");
             }
 
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
+            }
+
+            if (!await _repo.IsRoomAvailableForDates(int.Parse(newBooking.RoomNumber), newBooking.Start, newBooking.End))
+            {
+                return BadRequest("Room is not available for the selected dates.");
             }
 
             try
