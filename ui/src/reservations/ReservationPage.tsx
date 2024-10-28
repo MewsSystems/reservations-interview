@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useShowErrorToast, useShowSuccessToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
-import { ReservationCard } from "./ReservationCard";
+import { RoomCard } from "./RoomCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
@@ -46,7 +46,7 @@ export function ReservationPage() {
         <Dialog.Root>
           {isLoading && <LoadingCard />}
           {rooms?.map((room) => (
-            <ReservationCard
+            <RoomCard
               key={room.number}
               imgSrc="/bed.png"
               roomNumber={room.number}
