@@ -12,14 +12,14 @@ export interface NewReservation {
 
 /** The schema the API returns */
 const ReservationSchema = z.object({
-  Id: z.string(),
-  RoomNumber: z.string(),
-  GuestEmail: z.string().email(),
-  Start: z.string(),
-  End: z.string(),
+  id: z.string(),
+  roomNumber: z.string(),
+  guestEmail: z.string(),
+  start: z.string(),
+  end: z.string(),
 });
 
-type Reservation = z.infer<typeof ReservationSchema>;
+const ReservationListSchema = ReservationSchema.array();
 
 export function bookRoom(booking: NewReservation) {
   // unwrap branded types
@@ -43,5 +43,12 @@ export function useGetRooms() {
   return useQuery({
     queryKey: ["rooms"],
     queryFn: () => ky.get("api/room").json().then(RoomListSchema.parseAsync),
+  });
+}
+
+export function useGetReservations() {
+  return useQuery({
+    queryKey: ["reservations"],
+    queryFn: () => ky.get("api/reservation").json().then(ReservationListSchema.parseAsync),
   });
 }
