@@ -1,12 +1,22 @@
-import { Grid, Heading, Section } from "@radix-ui/themes";
-import { useGetReservationsFromToday } from "../reservations/api";
+import { Dialog, Grid, Heading, Section } from "@radix-ui/themes";
+import {
+  login,
+  useCheckCookie,
+  useGetReservationsFromToday,
+} from "../reservations/api";
 import { LoadingCard } from "../components/LoadingCard";
 import { ReservationCard } from "./ReservationCard";
+import { LoginModal } from "./LoginModal";
 
 export function StaffPage() {
+  const { isSuccess: isAuthenticated } = useCheckCookie();
   const { isLoading, data: reservations } = useGetReservationsFromToday();
 
-  return (
+  const onSubmitPasscode = (passcode: string) => {
+    login(passcode);
+  };
+
+  return isAuthenticated ? (
     <Section size="2" px="2">
       <Heading size="8" as="h1" color="mint">
         Reservations
@@ -23,6 +33,12 @@ export function StaffPage() {
           />
         ))}
       </Grid>
+    </Section>
+  ) : (
+    <Section size="2" px="2">
+      <Dialog.Root open={!isAuthenticated}>
+        <LoginModal onSubmit={onSubmitPasscode} />
+      </Dialog.Root>
     </Section>
   );
 }

@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { fromDateStringToIso, ISO8601String, toIsoStr } from "../utils/datetime";
+import {
+  fromDateStringToIso,
+  ISO8601String,
+  toIsoStr,
+} from "../utils/datetime";
 import ky from "ky";
 import { z } from "zod";
 
@@ -32,6 +36,10 @@ export function bookRoom(booking: NewReservation) {
   return ky.post("api/reservation", { json: newReservation });
 }
 
+export function login(passcode: string) {
+  return ky.get("api/staff/login", { headers: { "X-Staff-Code": passcode } });
+}
+
 const RoomSchema = z.object({
   number: z.string(),
   state: z.number(),
@@ -50,6 +58,19 @@ export function useGetReservationsFromToday() {
   const dateNow = new Date();
   return useQuery({
     queryKey: [`reservationsFromToday-${dateNow}`],
-    queryFn: () => ky.get(`api/reservation?fromDate=${toIsoStr(fromDateStringToIso(dateNow.toDateString()))}`).json().then(ReservationListSchema.parseAsync),
+    queryFn: () =>
+      ky
+        .get(
+          `api/reservation?fromDate=${toIsoStr(fromDateStringToIso(dateNow.toDateString()))}`
+        )
+        .json()
+        .then(ReservationListSchema.parseAsync),
+  });
+}
+
+export function useCheckCookie() {
+  return useQuery({
+    queryKey: [`useCheckCookie`],
+    queryFn: () => ky.get("api/staff/check"),
   });
 }
