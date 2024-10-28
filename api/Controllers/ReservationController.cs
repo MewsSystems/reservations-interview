@@ -22,9 +22,18 @@ namespace Controllers
         }
 
         [HttpGet, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Reservation>> GetReservations()
+        public async Task<ActionResult<Reservation>> GetReservations([FromQuery] DateTime? fromDate)
         {
-            var reservations = await _repo.GetReservations();
+            IEnumerable<Reservation> reservations;
+
+            if (fromDate is null)
+            {
+                reservations = await _repo.GetReservations();
+            }
+            else
+            {
+                reservations = await _repo.GetReservationsFromDate(fromDate.Value);
+            }
 
             return Json(reservations);
         }
@@ -52,7 +61,7 @@ namespace Controllers
         public async Task<ActionResult<Reservation>> BookReservation(
             [FromBody] Reservation newBooking
         )
-        {            
+        {
             if (newBooking.Start >= newBooking.End)
             {
                 ModelState.AddModelError(nameof(newBooking.End), "End date must be after start date.");
@@ -72,8 +81,8 @@ namespace Controllers
             }
 
             try
-            { 
-                await _roomRepo.GetRoom(newBooking.RoomNumber); 
+            {
+                await _roomRepo.GetRoom(newBooking.RoomNumber);
             }
             catch (NotFoundException)
             {

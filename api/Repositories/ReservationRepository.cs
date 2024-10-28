@@ -26,6 +26,20 @@ namespace Repositories
             return reservations.Select(r => r.ToDomain());
         }
 
+        public async Task<IEnumerable<Reservation>> GetReservationsFromDate(DateTime fromDate)
+        {
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                "SELECT * FROM Reservations WHERE Start >= @fromDate", 
+                new { fromDate });
+
+            if (reservations == null)
+            {
+                return [];
+            }
+
+            return reservations.Select(r => r.ToDomain());
+        }
+
         /// <summary>
         /// Find a reservation by its Guid ID, throwing if not found
         /// </summary>

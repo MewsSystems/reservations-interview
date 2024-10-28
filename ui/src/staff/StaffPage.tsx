@@ -1,10 +1,10 @@
 import { Grid, Heading, Section } from "@radix-ui/themes";
-import { useGetReservations } from "../reservations/api";
+import { useGetReservationsFromToday } from "../reservations/api";
 import { LoadingCard } from "../components/LoadingCard";
 import { ReservationCard } from "./ReservationCard";
 
 export function StaffPage() {
-  const { isLoading, isError, data: reservations, error } = useGetReservations();
+  const { isLoading, data: reservations } = useGetReservationsFromToday();
 
   return (
     <Section size="2" px="2">
@@ -14,7 +14,6 @@ export function StaffPage() {
 
       <Grid columns="1" gap="3">
         {isLoading && <LoadingCard />}
-        {isError && <div>{error.message}</div>}
         {reservations?.map((reservation) => (
           <ReservationCard
             roomNumber={reservation.roomNumber}
@@ -23,7 +22,6 @@ export function StaffPage() {
             guestEmail={reservation.guestEmail}
           />
         ))}
-
       </Grid>
     </Section>
   );

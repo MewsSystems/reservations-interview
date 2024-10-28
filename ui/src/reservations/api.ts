@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { ISO8601String, toIsoStr } from "../utils/datetime";
+import { fromDateStringToIso, ISO8601String, toIsoStr } from "../utils/datetime";
 import ky from "ky";
 import { z } from "zod";
 
@@ -46,9 +46,10 @@ export function useGetRooms() {
   });
 }
 
-export function useGetReservations() {
+export function useGetReservationsFromToday() {
+  const dateNow = new Date();
   return useQuery({
-    queryKey: ["reservations"],
-    queryFn: () => ky.get("api/reservation").json().then(ReservationListSchema.parseAsync),
+    queryKey: [`reservationsFromToday-${dateNow}`],
+    queryFn: () => ky.get(`api/reservation?fromDate=${toIsoStr(fromDateStringToIso(dateNow.toDateString()))}`).json().then(ReservationListSchema.parseAsync),
   });
 }
