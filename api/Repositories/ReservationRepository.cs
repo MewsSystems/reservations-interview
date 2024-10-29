@@ -79,6 +79,7 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
+            _db.Open();
             using var transaction = _db.BeginTransaction(IsolationLevel.Serializable);
 
             var roomAvailable = await IsRoomAvailableForDates(
@@ -98,6 +99,7 @@ namespace Repositories
             );
 
             transaction.Commit();
+            _db.Close();
 
             return createdReservation.ToDomain();
         }
