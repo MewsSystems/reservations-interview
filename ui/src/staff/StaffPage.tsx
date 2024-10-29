@@ -1,6 +1,7 @@
 import { Dialog, Grid, Heading, Section } from "@radix-ui/themes";
 import {
   login,
+  NewReservation,
   useCheckCookie,
   useGetReservationsFromToday,
 } from "../reservations/api";
@@ -9,11 +10,17 @@ import { ReservationCard } from "./ReservationCard";
 import { LoginModal } from "./LoginModal";
 
 export function StaffPage() {
-  const { isSuccess: isAuthenticated } = useCheckCookie();
-  const { isLoading, data: reservations } = useGetReservationsFromToday();
+  let isAuthenticated = useCheckCookie().isSuccess;
+  let { isLoading, data: reservations } = useGetReservationsFromToday();
 
   const onSubmitPasscode = (passcode: string) => {
-    login(passcode);
+    login(passcode).then(() => {
+      isAuthenticated = useCheckCookie().isSuccess;
+      const { isLoading: newIsLoading, data: newReservationsData } =
+        useGetReservationsFromToday();
+      isLoading = newIsLoading;
+      reservations = newReservationsData;
+    });
   };
 
   return isAuthenticated ? (
