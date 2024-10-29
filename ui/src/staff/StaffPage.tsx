@@ -1,7 +1,6 @@
 import { Dialog, Grid, Heading, Section } from "@radix-ui/themes";
 import {
   login,
-  NewReservation,
   useCheckCookie,
   useGetReservationsFromToday,
 } from "../reservations/api";

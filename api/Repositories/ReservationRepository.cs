@@ -61,7 +61,9 @@ namespace Repositories
             return reservation.ToDomain();
         }
 
-        // TODO: add summary
+        /// <summary>
+        /// Check if a room is available for a given date range - there should be no overlapping reservations
+        /// </summary>
         // TODO: add tests (possibly move the calculation to the domain model so that it is easier to test)
         public async Task<bool> IsRoomAvailableForDates(int roomNumber, DateTime start, DateTime end)
         {
@@ -74,7 +76,7 @@ namespace Repositories
                 new { roomNumber, start, end }
             );
 
-            return overlappingReservations.Count() == 0;
+            return !overlappingReservations.Any();
         }
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
