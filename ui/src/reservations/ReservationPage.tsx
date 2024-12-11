@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useShowSuccessToast } from "../utils/toasts";
+import { useShowErrorToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
@@ -19,13 +20,21 @@ export function ReservationPage() {
   const formattedRoomNumber = String(selectedRoomNumber).padStart(3, "0");
 
   const showToast = useShowSuccessToast("We have received your booking!");
+  const showErrorToast = useShowErrorToast("Error while booking the room!");
 
   function onClose() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+  async function onSubmit(booking: NewReservation) {
+    try {
+      await bookRoom(booking);
+    } catch (error) {
+      showErrorToast();
+      return;
+    }
+    onClose();
+    showToast();
   }
 
   const createClickHandler = (roomNumber: string) => () => {

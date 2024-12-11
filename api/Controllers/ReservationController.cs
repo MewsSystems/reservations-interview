@@ -1,3 +1,4 @@
+using api.Services;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
@@ -8,17 +9,21 @@ namespace Controllers
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller
     {
-        private ReservationRepository _repo { get; set; }
+        private readonly IReservationValidation _reservationValidation;
+        private readonly RoomRepository _roomRepository;
+        private ReservationRepository _reservationRepository;
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public ReservationController(ReservationRepository reservationRepository, IReservationValidation reservationValidation, RoomRepository roomRepository)
         {
-            _repo = reservationRepository;
+            _reservationValidation = reservationValidation;
+            _roomRepository = roomRepository;
+            _reservationRepository = reservationRepository;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
+            var reservations = await _reservationRepository.GetReservations();
 
             return Json(reservations);
         }
@@ -28,7 +33,7 @@ namespace Controllers
         {
             try
             {
-                var reservation = await _repo.GetReservation(reservationId);
+                var reservation = await _reservationRepository.GetReservation(reservationId);
                 return Json(reservation);
             }
             catch (NotFoundException)
@@ -47,6 +52,20 @@ namespace Controllers
             [FromBody] Reservation newBooking
         )
         {
+            // Validate booking
+            var validationResult = _reservationValidation.ValidateReservation(newBooking);
+            if (!string.IsNullOrEmpty(validationResult))
+            {
+                return BadRequest(validationResult);
+            }
+
+            // prevent double bookings
+            var reservations = await _reservationRepository.GetReservations();
+            if (reservations.Where(r => r.RoomNumber == newBooking.RoomNumber).Any(reservation => reservation.Overlaps(newBooking)))
+            {
+                return Conflict("Reservation overlaps");
+            }
+            
             // Provide a real ID if one is not provided
             if (newBooking.Id == Guid.Empty)
             {
@@ -55,7 +74,10 @@ namespace Controllers
 
             try
             {
-                var createdReservation = await _repo.CreateReservation(newBooking);
+                // GetRoom will throw in case room was not found
+                await _roomRepository.GetRoom(newBooking.RoomNumber);
+
+                var createdReservation = await _reservationRepository.CreateReservation(newBooking);
                 return Created($"/reservation/${createdReservation.Id}", createdReservation);
             }
             catch (Exception ex)
@@ -70,7 +92,7 @@ namespace Controllers
         [HttpDelete, Produces("application/json"), Route("{reservationId}")]
         public async Task<IActionResult> DeleteReservation(Guid reservationId)
         {
-            var result = await _repo.DeleteReservation(reservationId);
+            var result = await _reservationRepository.DeleteReservation(reservationId);
 
             return result ? NoContent() : NotFound();
         }
