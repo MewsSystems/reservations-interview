@@ -1,6 +1,7 @@
 using System.Data;
 using Dapper;
 using Models;
+using Models.Database;
 using Models.Errors;
 
 namespace Repositories
@@ -49,10 +50,93 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
-            );
+
+            if (newReservation.Id == Guid.Empty)
+            {
+                newReservation.Id = Guid.NewGuid();
+            }
+
+            if (_db is Microsoft.Data.Sqlite.SqliteConnection sqliteConnection)
+            {
+                if (sqliteConnection.State != ConnectionState.Open)
+                {
+                    await sqliteConnection.OpenAsync();
+                }
+            }
+            else
+            {
+                throw new InvalidOperationException("Database connection is not of type SQLiteConnection.");
+            }
+
+            using (var transaction = _db.BeginTransaction())
+            {
+                try
+                {
+                    var guestExists = await _db.ExecuteScalarAsync<int>(
+                        "SELECT COUNT(1) FROM Guests WHERE Email = @GuestEmail",
+                        new { GuestEmail = newReservation.GuestEmail }
+                    );
+
+                    if (guestExists == 0)
+                    {
+                        await _db.ExecuteAsync(
+                            "INSERT INTO Guests (Email, Name) VALUES (@Email, @Name)",
+                            new { Email = newReservation.GuestEmail, Name = newReservation.GuestEmail }
+                        );
+                    }
+
+                    var roomExists = await _db.ExecuteScalarAsync<int>(
+                        "SELECT COUNT(1) FROM Rooms WHERE Number = @RoomNumber",
+                        new { RoomNumber = Room.ConvertRoomNumberToInt(newReservation.RoomNumber) }
+                    );
+
+                    if (roomExists == 0)
+                    {
+                        throw new Exception("Room not found.");
+                    }
+
+                    var result = await _db.ExecuteAsync(
+                        @"
+                        INSERT INTO Reservations (Id, GuestEmail, RoomNumber, Start, End, CheckedIn, CheckedOut)
+                        VALUES (@Id, @GuestEmail, @RoomNumber, @Start, @End, @CheckedIn, @CheckedOut);
+                        ",
+                        new
+                        {
+                            Id = newReservation.Id.ToString(),
+                            GuestEmail = newReservation.GuestEmail,
+                            RoomNumber = Room.ConvertRoomNumberToInt(newReservation.RoomNumber),
+                            Start = newReservation.Start,
+                            End = newReservation.End,
+                            CheckedIn = newReservation.CheckedIn,
+                            CheckedOut = newReservation.CheckedOut
+                        },
+                        transaction: transaction
+                    );
+
+                    if (result == 0)
+                    {
+                        throw new Exception("Failed to insert the reservation.");
+                    }
+
+                    transaction.Commit();
+
+                    return new Reservation
+                    {
+                        Id = newReservation.Id,
+                        RoomNumber = newReservation.RoomNumber,
+                        GuestEmail = newReservation.GuestEmail,
+                        Start = newReservation.Start,
+                        End = newReservation.End,
+                        CheckedIn = newReservation.CheckedIn,
+                        CheckedOut = newReservation.CheckedOut
+                    };
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new Exception($"An error occurred while creating the reservation: {ex.Message}", ex);
+                }
+            }
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)
@@ -65,49 +149,24 @@ namespace Repositories
             return deleted > 0;
         }
 
-        private class ReservationDb
+        public async Task<IEnumerable<Reservation>> GetUpcomingReservations()
         {
-            public string Id { get; set; }
-            public int RoomNumber { get; set; }
+            var now = DateTime.UtcNow;
+            var query = @"
+                SELECT * 
+                FROM Reservations 
+                WHERE Start > @Now
+                ORDER BY Start ASC
+            ";
 
-            public string GuestEmail { get; set; }
+            var reservations = await _db.QueryAsync<ReservationDb>(query, new { Now = now });
 
-            public DateTime Start { get; set; }
-            public DateTime End { get; set; }
-            public bool CheckedIn { get; set; }
-            public bool CheckedOut { get; set; }
-
-            public ReservationDb()
+            if (reservations == null || !reservations.Any())
             {
-                Id = Guid.Empty.ToString();
-                RoomNumber = 0;
-                GuestEmail = "";
+                return new List<Reservation>();
             }
 
-            public ReservationDb(Reservation reservation)
-            {
-                Id = reservation.Id.ToString();
-                RoomNumber = Room.ConvertRoomNumberToInt(reservation.RoomNumber);
-                GuestEmail = reservation.GuestEmail;
-                Start = reservation.Start;
-                End = reservation.End;
-                CheckedIn = reservation.CheckedIn;
-                CheckedOut = reservation.CheckedOut;
-            }
-
-            public Reservation ToDomain()
-            {
-                return new Reservation
-                {
-                    Id = Guid.Parse(Id),
-                    RoomNumber = Room.FormatRoomNumber(RoomNumber),
-                    GuestEmail = GuestEmail,
-                    Start = Start,
-                    End = End,
-                    CheckedIn = CheckedIn,
-                    CheckedOut = CheckedOut
-                };
-            }
+            return reservations.Select(r => r.ToDomain());
         }
     }
 }

@@ -53,6 +53,13 @@ namespace Db
               );
             "
             );
+
+                        await db.ExecuteAsync(
+                $@"
+              CREATE INDEX IF NOT EXISTS idx_reservations_room_dates
+                ON Reservations ({nameof(Reservation.RoomNumber)}, {nameof(Reservation.Start)}, {nameof(Reservation.End)});
+                "
+            );
         }
     }
 }

@@ -6,6 +6,7 @@ import {
 import { Layout } from "./Layout";
 import { LandingPage } from "./LandingPage";
 import { ReservationPage } from "./reservations/ReservationPage";
+import { UpcomingReservations } from "./upcomingReservations/UpcomingReservations";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -25,6 +26,11 @@ const ROUTES = [
     path: "/reservations",
     getParentRoute: getRootRoute,
     component: ReservationPage,
+  }),
+  createRoute({
+    path: "/upcomingReservations",
+    getParentRoute: getRootRoute,
+    component: UpcomingReservations,
   }),
 ];
 

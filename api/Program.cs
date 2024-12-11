@@ -1,6 +1,7 @@
 using System.Data;
 using Db;
 using Microsoft.Data.Sqlite;
+using Models.Validators;
 using Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
     Services.AddSingleton<GuestRepository>();
     Services.AddSingleton<RoomRepository>();
     Services.AddSingleton<ReservationRepository>();
+    Services.AddSingleton<ReservationValidator>();
+    Services.AddSingleton<RoomValidator>();
+
     Services.AddMvc(opt =>
     {
         opt.EnableEndpointRouting = false;

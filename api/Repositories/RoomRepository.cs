@@ -71,6 +71,25 @@ namespace Repositories
             return deleted > 0;
         }
 
+        public async Task<bool> CheckRoomAvailability(string roomNumber, string startDate, string endDate)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+
+            var query = @"
+            SELECT 1
+            FROM Reservations 
+            WHERE RoomNumber = @roomNumberInt
+            AND Start < @endDate
+            AND End > @startDate
+            LIMIT 1;
+            "; 
+
+
+            var count = await _db.ExecuteScalarAsync<int>(query, new { roomNumberInt, startDate, endDate });
+
+            return count == 0; 
+        }
+
         // Inner class to hide the details of a direct mapping to SQLite
         private class RoomDb
         {

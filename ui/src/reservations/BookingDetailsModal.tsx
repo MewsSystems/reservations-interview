@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useShowInfoToast } from "../utils/toasts";
 import { fromDateStringToIso } from "../utils/datetime";
 import {
@@ -7,8 +8,9 @@ import {
 } from "@datepicker-react/styled";
 import { Box, Button, Dialog, Separator, TextField } from "@radix-ui/themes";
 import { NewReservation } from "./api";
-import { useState } from "react";
+import { useEmailValidation } from "../hooks/useEmailValidation";
 import styled from "styled-components";
+import { checkRoomAvailability } from "../utils/roomAvailability";
 
 interface BookingDetailsModalProps {
   roomNumber: string;
@@ -20,7 +22,6 @@ interface BookingFormProps {
   onSubmit: (booking: NewReservation) => void;
 }
 
-/** Must be inside a Dialog.Root that container Dialog.Triggers elsewhere */
 export function BookingDetailsModal({
   roomNumber,
   onSubmit,
@@ -48,20 +49,67 @@ const BottomRightBox = styled(Box)`
   right: 0;
 `;
 
+const DateRangeContainer = styled.div<{ isValid: boolean }>`
+  border: 2px solid ${({ isValid }) => (isValid ? "var(--green-9)" : "var(--red-9)")};
+  border-radius: 4px;
+  padding: 8px;
+  margin-top: 16px;
+
+  &:focus-within {
+    box-shadow: 0 0 0 2px ${({ isValid }) => (isValid ? "var(--green-6)" : "var(--red-6)")};
+  }
+`;
+
+const EmailContainer = styled.div<{ isValid: boolean }>`
+  border: 2px solid ${({ isValid }) => (isValid ? "var(--green-9)" : "var(--red-9)")};
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 16px;
+
+  &:focus-within {
+    box-shadow: 0 0 0 2px ${({ isValid }) => (isValid ? "var(--green-6)" : "var(--red-6)")};
+  }
+`;
+
+const ErrorMessage = styled.div`
+  color: var(--red-9);
+  margin-top: 8px;
+  font-size: 0.9rem;
+`;
+
+
 function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
-  const [email, setEmail] = useState("");
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
-    null,
-    null,
-  ]);
+  const { email, error: emailError, handleEmailChange } = useEmailValidation("");
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [roomAvailable, setRoomAvailable] = useState<boolean | null>(null);
   const showProcessingToast = useShowInfoToast("Processing booking...");
   const showNoInfoToast = useShowInfoToast("Missing email or dates.");
+  const showRoomUnavailableToast = useShowInfoToast("Room is unavailable for the selected dates.");
 
-  function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
+  const isEmailValid = email && !emailError ? true : false;
+  const areDatesValid = dateRange[0] && dateRange[1] && !dateError ? true : false;
+
+  async function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
     if (!email || !dateRange[0] || !dateRange[1]) {
       showNoInfoToast();
       evt.preventDefault();
+      return false;
+    }
+
+    const isAvailable = await checkRoomAvailability(
+      roomNumber,
+      dateRange[0].toISOString().split('T')[0],
+      dateRange[1].toISOString().split('T')[0]
+    );
+
+    if (!isAvailable) {
+      showRoomUnavailableToast();
+      setRoomAvailable(false);
+      setBookingError("Room is already booked for the selected dates.");      
+      alert("room is unavailable");
       return false;
     }
 
@@ -76,53 +124,90 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
   }
 
   function handleDateChange(data: OnDatesChangeProps) {
-    if (data.startDate && data.endDate) {
-      setDateRange([data.startDate, data.endDate]);
-      setFocusedInput(null);
-      return;
+    const { startDate, endDate } = data;
+    setDateRange([startDate || null, endDate || null]);
+
+
+    if (startDate && endDate) {
+      const differenceInTime = endDate.getTime() - startDate.getTime();
+      const differenceInDays = differenceInTime / (1000 * 3600 * 24);
+
+      if (startDate >= endDate) {
+        setDateError("End date must be at least one day after start date.");
+      } else if (differenceInDays > 30) {
+        setDateError("Booking cannot be longer than 30 days.");
+      } else {
+        setDateError(null);
+
+        checkRoomAvailability(
+          roomNumber,
+          startDate.toISOString().split('T')[0],
+          endDate.toISOString().split('T')[0] 
+        ).then(available => {
+          setRoomAvailable(available); 
+        });
+      }
+    } else {
+      setDateError(null);
+      setRoomAvailable(null);
     }
 
-    if (data.startDate) {
-      setDateRange([data.startDate, null]);
+    if (!startDate) {
+      setFocusedInput("startDate");
+    } else if (!endDate) {
       setFocusedInput("endDate");
-      return;
+    } else {
+      setFocusedInput(null);
     }
-
-    setDateRange([dateRange[0] || null, data.endDate]);
-    setFocusedInput("startDate");
   }
 
   return (
     <Box style={{ position: "relative", minHeight: 700 }}>
-      <TextField.Root
-        placeholder="... address@domain.tld ..."
-        onChange={(evt) => setEmail(evt.target.value)}
-        value={email}
-        type="email"
-        size="3"
-        mb="4"
-      >
-        <DimSlot side="left" prefix="email">
-          Email
-        </DimSlot>
-      </TextField.Root>
-      <DateRangeInput
-        vertical
-        showSelectedDates={false}
-        placement="bottom"
-        showStartDateCalendarIcon={false}
-        showEndDateCalendarIcon={false}
-        displayFormat="dd/MM/yyyy"
-        onDatesChange={handleDateChange}
-        startDate={dateRange[0]}
-        endDate={dateRange[1]}
-        focusedInput={focusedInput}
-        onFocusChange={setFocusedInput}
-        showResetDates={false}
-      />
+      <EmailContainer isValid={isEmailValid}>
+        <TextField.Root
+          placeholder="... address@domain.tld ..."
+          onChange={handleEmailChange}
+          value={email}
+          type="email"
+          size="3"
+          mb="4"
+        >
+          <DimSlot side="left" prefix="email">
+            Email
+          </DimSlot>
+        </TextField.Root>
+      </EmailContainer>
+      {emailError && <ErrorMessage>{emailError}</ErrorMessage>}
+
+      <DateRangeContainer isValid={roomAvailable !== null && roomAvailable}>
+        <DateRangeInput
+          vertical
+          showSelectedDates={false}
+          placement="bottom"
+          showStartDateCalendarIcon={false}
+          showEndDateCalendarIcon={false}
+          displayFormat="dd/MM/yyyy"
+          onDatesChange={handleDateChange}
+          startDate={dateRange[0]}
+          endDate={dateRange[1]}
+          focusedInput={focusedInput}
+          onFocusChange={setFocusedInput}
+          showResetDates={false}
+        />
+      </DateRangeContainer>
+
+      {dateError && <ErrorMessage>{dateError}</ErrorMessage>}
+      {bookingError && <ErrorMessage>{bookingError}</ErrorMessage>}
+
       <BottomRightBox>
         <Dialog.Close>
-          <Button size="3" color="mint" mt="4" onClick={handleSubmit}>
+          <Button
+            size="3"
+            color="mint"
+            mt="4"
+            onClick={handleSubmit}
+            disabled={!email || !areDatesValid || !isEmailValid || roomAvailable === null || !roomAvailable}
+          >
             Reserve
           </Button>
         </Dialog.Close>
