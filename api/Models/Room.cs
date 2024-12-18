@@ -39,6 +39,27 @@ namespace Models
 
             return roomNumberInt;
         }
+
+        // TODO: add tests
+        public static bool IsValidRoomNumberString(string roomNumber)
+        {
+            if (roomNumber.Length != 3)
+            {
+                return false;
+            }
+
+            if (!int.TryParse(roomNumber, out _))
+            {
+                return false;
+            }
+
+            if (roomNumber[1] == '0' && roomNumber[2] == '0')
+            {
+                return false;
+            }
+
+            return true;
+        }
     }
 
     public enum State

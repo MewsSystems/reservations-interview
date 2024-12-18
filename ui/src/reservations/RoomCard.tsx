@@ -10,14 +10,14 @@ const RoomImg = styled.img`
   height: auto;
 `;
 
-export type ReservationCardProps = PropsWithChildren<{
+export type RoomCardProps = PropsWithChildren<{
   onClick: () => void;
   imgSrc: string;
   roomNumber: string;
 }>;
 
 /** A Card wrapped in a Dialog.Trigger */
-export function ReservationCard(props: ReservationCardProps) {
+export function RoomCard(props: RoomCardProps) {
   return (
     <Dialog.Trigger>
       <Card size="3" variant="classic" asChild>

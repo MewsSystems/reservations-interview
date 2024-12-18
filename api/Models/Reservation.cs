@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace Models
 {
     public class Reservation
@@ -9,6 +11,7 @@ namespace Models
 
         public required string RoomNumber { get; set; }
 
+        [EmailAddress]
         public required string GuestEmail { get; set; }
 
         public DateTime Start { get; set; }

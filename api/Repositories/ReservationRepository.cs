@@ -26,6 +26,20 @@ namespace Repositories
             return reservations.Select(r => r.ToDomain());
         }
 
+        public async Task<IEnumerable<Reservation>> GetReservationsFromDate(DateTime fromDate)
+        {
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                "SELECT * FROM Reservations WHERE Start >= @fromDate", 
+                new { fromDate });
+
+            if (reservations == null)
+            {
+                return [];
+            }
+
+            return reservations.Select(r => r.ToDomain());
+        }
+
         /// <summary>
         /// Find a reservation by its Guid ID, throwing if not found
         /// </summary>
@@ -47,12 +61,49 @@ namespace Repositories
             return reservation.ToDomain();
         }
 
+        /// <summary>
+        /// Check if a room is available for a given date range - there should be no overlapping reservations
+        /// </summary>
+        // TODO: add tests (possibly move the calculation to the domain model so that it is easier to test)
+        public async Task<bool> IsRoomAvailableForDates(int roomNumber, DateTime start, DateTime end)
+        {
+            var overlappingReservations = await _db.QueryAsync<ReservationDb>(
+                @"SELECT * FROM Reservations WHERE RoomNumber = @roomNumber AND (
+                    Start < @start AND @start < End OR
+                    Start < @end AND @end < End OR
+                    @start < Start AND End < @end OR
+                    Start < @start AND @end < End)",
+                new { roomNumber, start, end }
+            );
+
+            return !overlappingReservations.Any();
+        }
+
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            _db.Open();
+            using var transaction = _db.BeginTransaction(IsolationLevel.Serializable);
+
+            var roomAvailable = await IsRoomAvailableForDates(
+                Room.ConvertRoomNumberToInt(newReservation.RoomNumber),
+                newReservation.Start,
+                newReservation.End
             );
+
+            if (!roomAvailable)
+            {
+                throw new InvalidOperationException("Room is not available for the selected dates.");
+            }
+
+            var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
+                "INSERT INTO Reservations(Id, GuestEmail, RoomNumber, Start, End) Values(@Id, @GuestEmail, @RoomNumber, @Start, @End) RETURNING *",
+                new ReservationDb(newReservation)
+            );
+
+            transaction.Commit();
+            _db.Close();
+
+            return createdReservation.ToDomain();
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)

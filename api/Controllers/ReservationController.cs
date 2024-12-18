@@ -9,22 +9,37 @@ namespace Controllers
     public class ReservationController : Controller
     {
         private ReservationRepository _repo { get; set; }
+        private RoomRepository _roomRepo { get; set; }
+        private GuestRepository _guestRepo { get; set; }
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public static int MAX_DAYS = 30;
+
+        public ReservationController(ReservationRepository reservationRepository, RoomRepository roomRepo, GuestRepository guestRepo)
         {
             _repo = reservationRepository;
+            _roomRepo = roomRepo;
+            _guestRepo = guestRepo;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Reservation>> GetReservations()
+        public async Task<ActionResult<Reservation>> GetReservations([FromQuery] DateTime? fromDate)
         {
-            var reservations = await _repo.GetReservations();
+            IEnumerable<Reservation> reservations;
+
+            if (fromDate is null)
+            {
+                reservations = await _repo.GetReservations();
+            }
+            else
+            {
+                reservations = await _repo.GetReservationsFromDate(fromDate.Value);
+            }
 
             return Json(reservations);
         }
 
         [HttpGet, Produces("application/json"), Route("{reservationId}")]
-        public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
+        public async Task<ActionResult<Reservation>> GetReservation(Guid reservationId)
         {
             try
             {
@@ -47,6 +62,57 @@ namespace Controllers
             [FromBody] Reservation newBooking
         )
         {
+            if (newBooking.Start >= newBooking.End)
+            {
+                ModelState.AddModelError(nameof(newBooking.End), "End date must be after start date.");
+            }
+
+            var duration = newBooking.End - newBooking.Start;
+            if (duration.TotalDays > MAX_DAYS)
+            {
+                ModelState.AddModelError(nameof(newBooking.End), $"Reservations cannot be longer than {MAX_DAYS} days.");
+            }
+
+            if (newBooking.Start.Date < DateTime.Now.Date)
+            {
+                ModelState.AddModelError(nameof(newBooking.Start), "Start date must be today or in the future.");
+            }
+
+            if (!Room.IsValidRoomNumberString(newBooking.RoomNumber))
+            {
+                ModelState.AddModelError(nameof(newBooking.RoomNumber), "Invalid room number.");
+            }
+
+            try
+            {
+                await _roomRepo.GetRoom(newBooking.RoomNumber);
+            }
+            catch (NotFoundException)
+            {
+                ModelState.AddModelError(nameof(newBooking.RoomNumber), "Room doesn't exist.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            // we check the same thing when creating the reservation in the database, but since the UI doesn't show 
+            // available rooms (yet), we can save a call to the repository by checking it here
+            if (!await _repo.IsRoomAvailableForDates(int.Parse(newBooking.RoomNumber), newBooking.Start, newBooking.End))
+            {
+                return BadRequest("Room is not available for the selected dates.");
+            }
+
+            try
+            {
+                await _guestRepo.GetGuestByEmail(newBooking.GuestEmail);
+            }
+            catch (NotFoundException)
+            {
+                await _guestRepo.CreateGuest(new Guest { Email = newBooking.GuestEmail, Name = "" });
+            }
+
             // Provide a real ID if one is not provided
             if (newBooking.Id == Guid.Empty)
             {

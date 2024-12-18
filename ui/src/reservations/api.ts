@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { ISO8601String, toIsoStr } from "../utils/datetime";
+import {
+  fromDateStringToIso,
+  ISO8601String,
+  toIsoStr,
+} from "../utils/datetime";
 import ky from "ky";
 import { z } from "zod";
 
@@ -12,14 +16,14 @@ export interface NewReservation {
 
 /** The schema the API returns */
 const ReservationSchema = z.object({
-  Id: z.string(),
-  RoomNumber: z.string(),
-  GuestEmail: z.string().email(),
-  Start: z.string(),
-  End: z.string(),
+  id: z.string(),
+  roomNumber: z.string(),
+  guestEmail: z.string(),
+  start: z.string(),
+  end: z.string(),
 });
 
-type Reservation = z.infer<typeof ReservationSchema>;
+const ReservationListSchema = ReservationSchema.array();
 
 export function bookRoom(booking: NewReservation) {
   // unwrap branded types
@@ -29,8 +33,11 @@ export function bookRoom(booking: NewReservation) {
     End: toIsoStr(booking.End),
   };
 
-  // TODO post some json with ky.post()
-  return Promise.resolve<Reservation>(newReservation as any as Reservation);
+  return ky.post("api/reservation", { json: newReservation });
+}
+
+export function login(passcode: string) {
+  return ky.get("api/staff/login", { headers: { "X-Staff-Code": passcode } });
 }
 
 const RoomSchema = z.object({
@@ -44,5 +51,26 @@ export function useGetRooms() {
   return useQuery({
     queryKey: ["rooms"],
     queryFn: () => ky.get("api/room").json().then(RoomListSchema.parseAsync),
+  });
+}
+
+export function useGetReservationsFromToday() {
+  const dateNow = new Date();
+  return useQuery({
+    queryKey: [`reservationsFromToday-${dateNow}`],
+    queryFn: () =>
+      ky
+        .get(
+          `api/reservation?fromDate=${toIsoStr(fromDateStringToIso(dateNow.toDateString()))}`
+        )
+        .json()
+        .then(ReservationListSchema.parseAsync),
+  });
+}
+
+export function useCheckCookie() {
+  return useQuery({
+    queryKey: [`useCheckCookie`],
+    queryFn: () => ky.get("api/staff/check"),
   });
 }
