@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.ComponentModel.DataAnnotations;
 using Models;
 using Repositories;
@@ -31,9 +32,25 @@ namespace Services
                 throw new Exception("Reservation cant be filled");
             }
 
+            var isOverlapingReservation = isOverlapingWithExistingReservation(newBooking);
+            if (isOverlapingReservation)
+            {
+                throw new ValidationException("Room is already booked during this time period");
+            }
+
             var createdReservation = await reservationRepository.CreateReservation(newBooking);
 
             return createdReservation;
+        }
+
+        private bool isOverlapingWithExistingReservation(Reservation newBooking) {
+            var existingReservations = reservationRepository.GetReservations(newBooking.RoomNumber);
+
+            // Check for overlaping reservations
+            if(existingReservations.Any(x =>x.Start < newBooking.End && x.End > newBooking.Start)
+            {
+                return true;
+            }
         }
     }
 }

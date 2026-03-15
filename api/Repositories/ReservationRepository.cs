@@ -26,6 +26,22 @@ namespace Repositories
             return reservations.Select(r => r.ToDomain());
         }
 
+        public async Task<IEnumerable<Reservation>> GetReservations(string roomNumber)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                "SELECT * FROM Reservations WHERE RoomNumber = @roomNumberInt",
+                new { roomNumberInt });
+
+            if (reservations == null)
+            {
+                return [];
+            }
+
+            return reservations.Select(r => r.ToDomain());
+        }
+
         /// <summary>
         /// Find a reservation by its Guid ID, throwing if not found
         /// </summary>
