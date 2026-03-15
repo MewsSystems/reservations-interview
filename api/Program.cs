@@ -1,5 +1,7 @@
 using System.Data;
+using Controllers.Validators;
 using Db;
+using FluentValidation.AspNetCore;
 using Microsoft.Data.Sqlite;
 using Repositories;
 using Services;
@@ -22,7 +24,12 @@ var builder = WebApplication.CreateBuilder(args);
     Services.AddMvc(opt =>
     {
         opt.EnableEndpointRouting = false;
+    })
+    .AddFluentValidation(fv =>
+    {
+        fv.RegisterValidatorsFromAssemblyContaining<ReservationValidator>();
     });
+    Services.AddProblemDetails();
     Services.AddCors();
     Services.AddEndpointsApiExplorer();
     Services.AddSwaggerGen();

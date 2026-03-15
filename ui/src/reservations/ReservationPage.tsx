@@ -5,6 +5,7 @@ import { ReservationCard } from "./ReservationCard";
 import { useBookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
+import { HTTPError } from "ky";
 
 const RESPONSIVE_GRID_COLS: React.ComponentProps<typeof Grid>["columns"] = {
     sm: "1",
@@ -33,7 +34,13 @@ export function ReservationPage() {
             showToast();
             onClose();
         } catch (error) {
-            console.error(error);
+            const problem = await error.response.clone().json();
+
+            console.log("STATUS:", error.response.status);
+            console.log("DETAIL:", problem.detail);
+            console.log("ERRORS:", problem.errors);
+
+            //TODO: display errors to modal window
         }
     }
 

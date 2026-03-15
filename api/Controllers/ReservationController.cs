@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
@@ -61,6 +62,14 @@ namespace Controllers
             {
                 var createdReservation = await _reservationService.CreateReservation(newBooking);
                 return Created($"/reservation/${createdReservation.Id}", createdReservation);
+            }
+            catch(ValidationException ex)
+            {
+                return ValidationProblem(
+                    type: "Validation failed",
+                    title: "Validation failed",
+                    detail: ex.Message,
+                    statusCode: StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {

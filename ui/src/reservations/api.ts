@@ -25,7 +25,7 @@ type Reservation = z.infer<typeof ReservationSchema>;
 
 export function useBookRoom() {
     return useMutation({
-        mutationFn: bookRoom,
+        mutationFn: bookRoom
     });
 }
 
