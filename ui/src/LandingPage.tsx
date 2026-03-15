@@ -1,44 +1,67 @@
-import { Box, Card, Flex, Heading, Inset } from "@radix-ui/themes";
-import { Link } from "@tanstack/react-router";
-
-function handleLogin() {
-  // TODO have a staff view
-  alert("Not implemented");
-}
-
+import { Box, Card, Flex, Heading, Inset, Dialog } from "@radix-ui/themes";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Login, LoginModal } from "./login/LoginModal";
+import ky from "ky";
 export function LandingPage() {
-  return (
-    <Flex direction="row" align="center" justify="center" gap="9" pt="9">
-      <Card size="3" asChild variant="classic">
-        <a href="#" onClick={handleLogin}>
-          <Inset side="top" pb="current">
-            <img
-              src="https://images.unsplash.com/photo-1550527882-b71dea5f8089?q=80&w=240&h=360&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              alt="Key on wood board"
-              style={{
-                width: 240,
-                height: 360,
-              }}
-            />
-          </Inset>
-          <Heading align="center">Login</Heading>
-        </a>
-      </Card>
-      <Card size="3" asChild variant="classic">
-        <Link to="/reservations" preload="intent">
-          <Inset clip="padding-box" side="top" pb="current">
-            <img
-              src="https://images.unsplash.com/photo-1531576788337-610fa9c67107?q=80&w=240&h=360&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-              alt="Clean Bed"
-              style={{
-                width: 240,
-                height: 360,
-              }}
-            />
-          </Inset>
-          <Heading align="center">Reserve</Heading>
-        </Link>
-      </Card>
-    </Flex>
-  );
+    const navigate = useNavigate();
+
+    async function onSubmit(login: Login) {
+
+        try {
+            await ky.get("api/staff/login", {
+                headers: {
+                    "X-Staff-Code": login.Password
+                }
+            });
+            await ky.get("api/staff/check");
+        } catch (error) {
+            console.log("Login error:", error);
+            return;
+        }
+
+        navigate({ to: "/staff" });
+    }
+
+
+    return (
+        <Flex direction="row" align="center" justify="center" gap="9" pt="9">
+            <Dialog.Root>
+                <Dialog.Trigger>
+                    <Card size="3" asChild variant="classic">
+                        <a href="#" >
+                            <Inset side="top" pb="current">
+                                <img
+                                    src="https://images.unsplash.com/photo-1550527882-b71dea5f8089?q=80&w=240&h=360&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                                    alt="Key on wood board"
+                                    style={{
+                                        width: 240,
+                                        height: 360,
+                                    }}
+                                />
+                            </Inset>
+                            <Heading align="center">Login</Heading>
+                        </a>
+                    </Card>
+                </Dialog.Trigger>
+                <LoginModal
+                    onSubmit={onSubmit}
+                />
+            </Dialog.Root>
+            <Card size="3" asChild variant="classic">
+                <Link to="/reservations" preload="intent">
+                    <Inset clip="padding-box" side="top" pb="current">
+                        <img
+                            src="https://images.unsplash.com/photo-1531576788337-610fa9c67107?q=80&w=240&h=360&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                            alt="Clean Bed"
+                            style={{
+                                width: 240,
+                                height: 360,
+                            }}
+                        />
+                    </Inset>
+                    <Heading align="center">Reserve</Heading>
+                </Link>
+            </Card>
+        </Flex>
+    );
 }
