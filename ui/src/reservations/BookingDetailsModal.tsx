@@ -50,6 +50,8 @@ const BottomRightBox = styled(Box)`
 
 function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [surname, setSurname] = useState("");
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
     null,
@@ -69,6 +71,8 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
     onSubmit({
       RoomNumber: roomNumber,
       GuestEmail: email,
+      Name: name,
+      Surname: surname,
       Start: fromDateStringToIso(dateRange[0]),
       End: fromDateStringToIso(dateRange[1]),
     });
@@ -105,7 +109,31 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         <DimSlot side="left" prefix="email">
           Email
         </DimSlot>
-      </TextField.Root>
+          </TextField.Root>
+          <TextField.Root
+              placeholder="... John ..."
+              onChange={(evt) => setName(evt.target.value)}
+              value={name}
+              type="text"
+              size="3"
+              mb="4"
+          >
+              <DimSlot side="left" prefix="name">
+                  Name
+              </DimSlot>
+          </TextField.Root>
+          <TextField.Root
+              placeholder="... Doe ..."
+              onChange={(evt) => setSurname(evt.target.value)}
+              value={surname}
+              type="text"
+              size="3"
+              mb="4"
+          >
+              <DimSlot side="left" prefix="surname">
+                  Surname
+              </DimSlot>
+          </TextField.Root>
       <DateRangeInput
         vertical
         showSelectedDates={false}

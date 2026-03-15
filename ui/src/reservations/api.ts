@@ -6,6 +6,8 @@ import { z } from "zod";
 export interface NewReservation {
     RoomNumber: string;
     GuestEmail: string;
+    Name: string;
+    Surname: string;
     Start: ISO8601String;
     End: ISO8601String;
 }

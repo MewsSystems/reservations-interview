@@ -2,6 +2,7 @@ using System.Data;
 using Db;
 using Microsoft.Data.Sqlite;
 using Repositories;
+using Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,6 +15,7 @@ var builder = WebApplication.CreateBuilder(args);
 
     Services.AddSingleton(_ => new SqliteConnection(connectionString));
     Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
+    Services.AddSingleton<IReservationService, ReservationService>();
     Services.AddSingleton<GuestRepository>();
     Services.AddSingleton<RoomRepository>();
     Services.AddSingleton<ReservationRepository>();

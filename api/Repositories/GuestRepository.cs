@@ -26,7 +26,7 @@ namespace Repositories
             return guests;
         }
 
-        public async Task<Guest> GetGuestByEmail(string guestEmail)
+        public async Task<Guest?> GetGuestByEmail(string guestEmail)
         {
             var guest = await _db.QueryFirstOrDefaultAsync<Guest>(
                 "SELECT * FROM Guests WHERE Email = @guestEmail;",
@@ -35,18 +35,25 @@ namespace Repositories
 
             if (guest == null)
             {
-                throw new NotFoundException($"Guest {guestEmail} not found");
+                return null;
             }
 
             return guest;
         }
 
-        public Task<Guest> CreateGuest(Guest newGuest)
+        public async Task<Guest?> CreateGuest(Guest newGuest)
         {
-            return _db.QuerySingleAsync<Guest>(
+            await _db.QuerySingleAsync<Guest>(
                 "INSERT INTO Guests(Email, Name) Values(@Email, @Name) RETURNING *",
                 newGuest
             );
+
+            if (newGuest == null)
+            {
+                return null;
+            }
+
+            return newGuest;
         }
 
         public async Task<bool> DeleteGuestByEmail(string guestEmail)

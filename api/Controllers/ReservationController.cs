@@ -2,17 +2,21 @@ using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
 using Repositories;
+using Services;
 
 namespace Controllers
 {
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller
     {
+        private readonly IReservationService _reservationService;
+
         private ReservationRepository _repo { get; set; }
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public ReservationController(ReservationRepository reservationRepository, IReservationService reservationService)
         {
             _repo = reservationRepository;
+            _reservationService = reservationService;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
@@ -55,7 +59,7 @@ namespace Controllers
 
             try
             {
-                var createdReservation = await _repo.CreateReservation(newBooking);
+                var createdReservation = await _reservationService.CreateReservation(newBooking);
                 return Created($"/reservation/${createdReservation.Id}", createdReservation);
             }
             catch (Exception ex)
