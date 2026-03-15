@@ -47,7 +47,7 @@ namespace Services
             var existingReservations = reservationRepository.GetReservations(newBooking.RoomNumber);
 
             // Check for overlaping reservations
-            if(existingReservations.Any(x =>x.Start < newBooking.End && x.End > newBooking.Start)
+            if(existingReservations.Any(x =>x.Start < newBooking.End && x.End > newBooking.Start))
             {
                 return true;
             }
