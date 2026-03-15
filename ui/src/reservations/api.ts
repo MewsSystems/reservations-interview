@@ -14,14 +14,31 @@ export interface NewReservation {
 
 /** The schema the API returns */
 const ReservationSchema = z.object({
-    Id: z.string(),
-    RoomNumber: z.string(),
-    GuestEmail: z.string().email(),
-    Start: z.string(),
-    End: z.string(),
+    id: z.string(),
+    roomNumber: z.string(),
+    guestEmail: z.string().email(),
+    start: z.string(),
+    end: z.string(),
 });
 
 type Reservation = z.infer<typeof ReservationSchema>;
+
+export function useStaffReservations(from?: string, to?: string) {
+    return useQuery({
+        queryKey: ["staffReservations", from, to],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+
+            if (from) params.append("from", from);
+            if (to) params.append("to", to);
+
+            return ky
+                .get(`/api/staff/reservations?${params}`)
+                .json()
+                .then(ReservationSchema.array().parse);
+        },
+    });
+}
 
 export function useBookRoom() {
     return useMutation({
@@ -38,7 +55,7 @@ export async function bookRoom(booking: NewReservation) {
     };
 
     return await ky
-        .post("api/reservation", { json: newReservation })
+        .post("/api/reservation", { json: newReservation })
         .json()
         .then(ReservationSchema.parse);
 }

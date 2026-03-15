@@ -1,15 +1,18 @@
 using Microsoft.AspNetCore.Mvc;
+using Services;
 
 namespace Controllers
 {
     [Route("staff")]
     public class StaffController : Controller
     {
+        private readonly IReservationService _reservationService;
         private IConfiguration Config { get; set; }
 
-        public StaffController(IConfiguration config)
+        public StaffController(IConfiguration config, IReservationService reservationService)
         {
             Config = config;
+            _reservationService = reservationService;
         }
 
         /// <summary>
@@ -64,6 +67,18 @@ namespace Controllers
             }
 
             return Ok("Authorized");
+        }
+
+        [HttpGet, Route("reservations")]
+        public async Task<IActionResult> GetReservations(DateTime? from, DateTime? to)
+        {
+            if (IsNotStaff(Request, out IActionResult? result))
+            {
+                return result!;
+            }
+
+            var reservations = await _reservationService.GetReservations(from, to);
+            return Json(reservations);
         }
     }
 }

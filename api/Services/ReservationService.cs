@@ -32,7 +32,7 @@ namespace Services
                 throw new Exception("Reservation cant be filled");
             }
 
-            var isOverlapingReservation = isOverlapingWithExistingReservation(newBooking);
+            var isOverlapingReservation = await isOverlapingWithExistingReservation(newBooking);
             if (isOverlapingReservation)
             {
                 throw new ValidationException("Room is already booked during this time period");
@@ -43,14 +43,30 @@ namespace Services
             return createdReservation;
         }
 
-        private bool isOverlapingWithExistingReservation(Reservation newBooking) {
-            var existingReservations = reservationRepository.GetReservations(newBooking.RoomNumber);
+        public async Task<IEnumerable<Reservation>> GetReservations(DateTime? from, DateTime? to)
+        {
+            var reservations = await reservationRepository.GetReservations();
+
+            if (from != null)
+            {
+                reservations = reservations.Where(r => r.Start >= from);
+            }
+
+            if (to != null)
+            {
+                reservations = reservations.Where(r => r.End <= to);
+            }
+
+            return reservations;
+        }
+
+        private async Task<bool> isOverlapingWithExistingReservation(Reservation newBooking) {
+            var existingReservations = await reservationRepository.GetReservations(newBooking.RoomNumber);
 
             // Check for overlaping reservations
-            if(existingReservations.Any(x =>x.Start < newBooking.End && x.End > newBooking.Start))
-            {
-                return true;
-            }
+            return (existingReservations.Any(x => x.Start < newBooking.End && x.End > newBooking.Start))
+                ? true
+                : false;
         }
     }
 }

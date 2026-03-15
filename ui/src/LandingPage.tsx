@@ -19,7 +19,7 @@ export function LandingPage() {
             return;
         }
 
-        navigate({ to: "/staff" });
+        navigate({ to: "/staff/overview" });
     }
 
 
