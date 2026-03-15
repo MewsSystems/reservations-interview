@@ -2,60 +2,69 @@ import { useState } from "react";
 import { useShowSuccessToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
-import { bookRoom, NewReservation, useGetRooms } from "./api";
+import { useBookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
 
 const RESPONSIVE_GRID_COLS: React.ComponentProps<typeof Grid>["columns"] = {
-  sm: "1",
-  md: "2",
-  lg: "4",
+    sm: "1",
+    md: "2",
+    lg: "4",
 };
 
 export function ReservationPage() {
-  const { isLoading, data: rooms } = useGetRooms();
-  const [selectedRoomNumber, setSelectedRoomNumber] = useState("");
+    const { isLoading, data: rooms } = useGetRooms();
+    const [selectedRoomNumber, setSelectedRoomNumber] = useState("");
 
-  const formattedRoomNumber = String(selectedRoomNumber).padStart(3, "0");
+    const formattedRoomNumber = String(selectedRoomNumber).padStart(3, "0");
 
-  const showToast = useShowSuccessToast("We have received your booking!");
+    const showToast = useShowSuccessToast("We have received your booking!");
 
-  function onClose() {
-    setSelectedRoomNumber("");
-  }
+    function onClose() {
+        setSelectedRoomNumber("");
+    }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
-  }
+    const { mutateAsync: bookRoom } = useBookRoom();
 
-  const createClickHandler = (roomNumber: string) => () => {
-    setSelectedRoomNumber(roomNumber);
-  };
+    async function onSubmit(booking: NewReservation) {
 
-  return (
-    <Section size="2" px="2">
-      <Heading size="8" as="h1" color="mint">
-        Rooms
-      </Heading>
+        try {
+            const reservation = await bookRoom(booking);
+            showToast();
+            onClose();
+        } catch (error) {
+            console.error(error);
+        }
+    }
 
-      <Grid columns={RESPONSIVE_GRID_COLS} gap="4" px="4" mt="8">
-        <Dialog.Root>
-          {isLoading && <LoadingCard />}
-          {rooms?.map((room) => (
-            <ReservationCard
-              key={room.number}
-              imgSrc="/bed.png"
-              roomNumber={room.number}
-              onClick={createClickHandler(room.number)}
-            />
-          ))}
+    const createClickHandler = (roomNumber: string) => () => {
+        setSelectedRoomNumber(roomNumber);
+    };
 
-          <BookingDetailsModal
-            roomNumber={formattedRoomNumber}
-            onSubmit={onSubmit}
-          />
-        </Dialog.Root>
-      </Grid>
-    </Section>
-  );
+    return (
+        <Section size="2" px="2">
+            <Heading size="8" as="h1" color="mint">
+                Rooms
+            </Heading>
+
+            <Grid columns={RESPONSIVE_GRID_COLS} gap="4" px="4" mt="8">
+                <Dialog.Root>
+                    {isLoading && <LoadingCard />}
+                    {rooms?.map((room) => (
+                        <ReservationCard
+                            key={room.number}
+                            imgSrc="/bed.png"
+                            roomNumber={room.number}
+                            onClick={createClickHandler(room.number)}
+                        />
+                    ))}
+
+                    <BookingDetailsModal
+                        roomNumber={formattedRoomNumber}
+                        onSubmit={onSubmit}
+                    />
+                </Dialog.Root>
+            </Grid>
+        </Section>
+    );
 }
