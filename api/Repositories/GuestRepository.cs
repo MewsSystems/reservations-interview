@@ -35,7 +35,7 @@ namespace Repositories
 
             if (guest == null)
             {
-                throw new NotFoundException($"Guest {guestEmail} not found");
+                throw new NotFoundException(nameof(Guest), guestEmail);
             }
 
             return guest;

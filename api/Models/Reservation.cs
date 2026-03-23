@@ -15,5 +15,6 @@ namespace Models
         public DateTime End { get; set; }
         public bool CheckedIn { get; set; }
         public bool CheckedOut { get; set; }
+        public DateTime? CheckedOutAt { get; set; }
     }
 }

@@ -1,5 +1,6 @@
 using System.Data;
 using Dapper;
+using Extensions;
 using Models;
 using Models.Errors;
 
@@ -15,87 +16,123 @@ namespace Repositories
         }
 
         /// <summary>
-        /// Find a room by its formatted room number, throwing if not found
+        /// Find a room by its room number, throwing if not found
         /// </summary>
-        /// <param name="roomNumber"></param>
-        /// <returns cref="Room">An existing room</returns>
         /// <exception cref="NotFoundException"></exception>
         public async Task<Room> GetRoom(string roomNumber)
         {
-            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+            Room.ValidateRoomNumber(roomNumber);
 
-            var room = await _db.QueryFirstOrDefaultAsync<RoomDb>(
-                "SELECT * FROM Rooms WHERE Number = @roomNumberInt;",
-                new { roomNumberInt }
+            var room = await _db.QueryFirstOrDefaultAsync<Room>(
+                "SELECT * FROM Rooms WHERE Number = @roomNumber;",
+                new { roomNumber }
             );
 
             if (room == null)
             {
-                throw new NotFoundException($"Room {roomNumber} not found");
+                throw new NotFoundException(nameof(Room), roomNumber);
             }
 
-            return room.ToDomain();
+            return room;
         }
 
         public async Task<IEnumerable<Room>> GetRooms()
         {
-            var rooms = await _db.QueryAsync<RoomDb>("SELECT * FROM Rooms");
+            var rooms = await _db.QueryAsync<Room>("SELECT * FROM Rooms");
 
             if (rooms == null)
             {
                 return [];
             }
 
-            return rooms.Select(r => r.ToDomain());
+            return rooms;
         }
 
         public async Task<Room> CreateRoom(Room newRoom)
         {
-            var createdRoom = await _db.QuerySingleAsync<RoomDb>(
+            Room.ValidateRoomNumber(newRoom.Number);
+
+            var createdRoom = await _db.QuerySingleAsync<Room>(
                 "INSERT INTO Rooms(Number, State) Values(@Number, @State) RETURNING *",
-                new RoomDb(newRoom)
+                newRoom
             );
 
-            return createdRoom.ToDomain();
+            return createdRoom;
+        }
+
+        public async Task<int> CreateRoomsBatch(List<(int Line, Room Room)> rooms, List<Contracts.ImportError> errors)
+        {
+            if (rooms.Count == 0) return 0;
+
+            using var transaction = _db.BeginSerializableTransaction();
+            var imported = 0;
+
+            try
+            {
+                var existingNumbers = (await _db.QueryAsync<string>(
+                    "SELECT Number FROM Rooms WHERE Number IN @Numbers",
+                    new { Numbers = rooms.Select(r => r.Room.Number).ToList() },
+                    transaction
+                )).ToHashSet();
+
+                foreach (var (line, room) in rooms)
+                {
+                    if (existingNumbers.Contains(room.Number))
+                    {
+                        errors.Add(new Contracts.ImportError(line, room.Number, $"Room {room.Number} already exists"));
+                        continue;
+                    }
+
+                    await _db.ExecuteAsync(
+                        "INSERT INTO Rooms(Number, State) VALUES(@Number, @State)",
+                        room,
+                        transaction
+                    );
+                    imported++;
+                }
+
+                transaction.Commit();
+                return imported;
+            }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
+
+        public async Task<bool> RoomExists(string roomNumber)
+        {
+            var count = await _db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM Rooms WHERE Number = @roomNumber",
+                new { roomNumber }
+            );
+            return count > 0;
+        }
+
+        public async Task<Room> UpdateRoomState(string roomNumber, State state)
+        {
+            var room = await GetRoom(roomNumber);
+
+            await _db.ExecuteAsync(
+                "UPDATE Rooms SET State = @State WHERE Number = @roomNumber",
+                new { State = (int)state, roomNumber }
+            );
+
+            room.State = state;
+            return room;
         }
 
         public async Task<bool> DeleteRoom(string roomNumber)
         {
-            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+            Room.ValidateRoomNumber(roomNumber);
 
             var deleted = await _db.ExecuteAsync(
-                "DELETE FROM Rooms WHERE Number = @roomNumberInt;",
-                new { roomNumberInt }
+                "DELETE FROM Rooms WHERE Number = @roomNumber;",
+                new { roomNumber }
             );
 
             return deleted > 0;
-        }
-
-        // Inner class to hide the details of a direct mapping to SQLite
-        private class RoomDb
-        {
-            /// <summary>
-            /// PKID For Rooms. SQLite stores as an integer
-            /// </summary>
-            public int Number { get; set; }
-
-            /// <summary>
-            /// Whether the room is available for reservation
-            /// </summary>
-            public State State { get; set; } = State.Ready;
-
-            public RoomDb() { }
-
-            public RoomDb(Room room)
-            {
-                Number = Room.ConvertRoomNumberToInt(room.Number);
-                State = room.State;
-            }
-
-            public Room ToDomain()
-            {
-                return new Room { Number = Room.FormatRoomNumber(Number), State = State };
-            }
         }
     }
 }

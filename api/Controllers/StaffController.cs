@@ -1,69 +1,44 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Controllers
 {
+    [ApiController]
     [Route("staff")]
-    public class StaffController : Controller
+    public class StaffController : ControllerBase
     {
-        private IConfiguration Config { get; set; }
+        private readonly IConfiguration _config;
 
         public StaffController(IConfiguration config)
         {
-            Config = config;
+            _config = config;
         }
 
-        /// <summary>
-        /// Checks if the request is from a staff member, if not returns true and a 403 result
-        /// </summary>
-        /// <param name="request"></param>
-        private bool IsNotStaff(HttpRequest request, out IActionResult? result)
+        [HttpPost("login")]
+        public IActionResult Login([FromHeader(Name = "X-Staff-Code")] string accessCode)
         {
-            // TODO explore UseAuthentication
-            request.Cookies.TryGetValue("access", out string? accessValue);
-
-            if (accessValue == null || accessValue == "0")
+            var configuredSecret = _config.GetValue<string>("staffAccessCode");
+            if (accessCode != configuredSecret)
             {
-                result = StatusCode(403);
-                return true;
+                return Unauthorized(new { detail = "Invalid access code" });
             }
 
-            result = null;
-            return false;
-        }
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expiryHours = _config.GetValue<int>("Jwt:ExpiryHours");
 
-        [HttpGet, Route("login")]
-        public IActionResult CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
-        {
-            var configuredSecret = Config.GetValue<string>("staffAccessCode");
-            if (configuredSecret != accessCode)
-            {
-                // don't set cookie, don't indicate anything
-                return NoContent();
-            }
-            Response.Cookies.Append(
-                "access",
-                "1",
-                new CookieOptions
-                // TODO evaluate cookie options & auth mechanism for best security practices
-                {
-                    IsEssential = true,
-                    SameSite = SameSiteMode.Strict,
-                    HttpOnly = true,
-                    Secure = true
-                }
+            var token = new JwtSecurityToken(
+                claims: [new Claim(ClaimTypes.Role, "Staff")],
+                expires: DateTime.UtcNow.AddHours(expiryHours),
+                signingCredentials: credentials
             );
-            return NoContent();
-        }
 
-        [HttpGet, Route("check")]
-        public IActionResult CheckCookie()
-        {
-            if (IsNotStaff(Request, out IActionResult? result))
-            {
-                return result!;
-            }
-
-            return Ok("Authorized");
+            return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
         }
     }
+
 }

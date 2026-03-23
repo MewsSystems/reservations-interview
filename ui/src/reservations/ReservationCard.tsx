@@ -4,10 +4,10 @@ import styled from "styled-components";
 
 /** 600px wide image for Rooms */
 const RoomImg = styled.img`
-  min-width: 300px;
   width: 100%;
-  max-width: 700px;
-  height: auto;
+  height: 200px;
+  object-fit: cover;
+  display: block;
 `;
 
 export type ReservationCardProps = PropsWithChildren<{
@@ -20,7 +20,7 @@ export type ReservationCardProps = PropsWithChildren<{
 export function ReservationCard(props: ReservationCardProps) {
   return (
     <Dialog.Trigger>
-      <Card size="3" variant="classic" asChild>
+      <Card size="2" variant="classic" asChild>
         <a href="#" onClick={props.onClick}>
           <Inset clip="padding-box" side="top" pb="current">
             <RoomImg src={props.imgSrc} alt="room photo" />

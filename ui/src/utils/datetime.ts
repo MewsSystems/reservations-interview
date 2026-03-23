@@ -10,11 +10,19 @@ export type ISO8601String = {
   readonly _value: string;
 };
 
+/** Format as YYYY-MM-DD to avoid timezone shifting */
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}T00:00:00`;
+}
+
 /** Any date will pass through transparently */
 function fromDate(date: Date): ISO8601String {
   return {
     [DateTimeSym]: "utils/datetime/iso8601",
-    _value: date.toISOString(),
+    _value: toLocalDateString(date),
     _dateValue: date,
   };
 }

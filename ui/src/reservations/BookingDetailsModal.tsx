@@ -55,7 +55,6 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
     null,
   ]);
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
-  const showProcessingToast = useShowInfoToast("Processing booking...");
   const showNoInfoToast = useShowInfoToast("Missing email or dates.");
 
   function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
@@ -65,12 +64,11 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
       return false;
     }
 
-    showProcessingToast();
     onSubmit({
-      RoomNumber: roomNumber,
-      GuestEmail: email,
-      Start: fromDateStringToIso(dateRange[0]),
-      End: fromDateStringToIso(dateRange[1]),
+      roomNumber,
+      guestEmail: email,
+      start: fromDateStringToIso(dateRange[0]),
+      end: fromDateStringToIso(dateRange[1]),
     });
     return true;
   }

@@ -1,8 +1,6 @@
 namespace Models.Errors
 {
-    public class NotFoundException : Exception
+    public class NotFoundException(string resourceType, string resourceId) : ResourceException(resourceType, resourceId, $"{resourceType} {resourceId} not found")
     {
-        public NotFoundException(string message)
-            : base(message) { }
     }
 }
