@@ -18,7 +18,7 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
+            if (IsNotStaff(Request, out ActionResult? result))
             {
                 return result!;
             }
@@ -31,7 +31,7 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("{reservationId}")]
         public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
         {
-            if (IsNotStaff(Request, out IActionResult? result))
+            if (IsNotStaff(Request, out ActionResult? result))
             {
                 return result!;
             }
@@ -95,6 +95,36 @@ namespace Controllers
             var result = await _repo.DeleteReservation(reservationId);
 
             return result ? NoContent() : NotFound();
+        }
+
+        [HttpPost, Produces("application/json"), Route("{reservationId}/check-in")]
+        public async Task<ActionResult<Reservation>> CheckInReservation(
+            Guid reservationId,
+            [FromBody] CheckInReservationRequest request
+        )
+        {
+            if (IsNotStaff(Request, out ActionResult? result))
+            {
+                return result!;
+            }
+
+            try
+            {
+                var checkedInReservation = await _repo.CheckInReservation(
+                    reservationId,
+                    request.GuestEmail
+                );
+
+                return Json(checkedInReservation);
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (InvalidCheckInException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

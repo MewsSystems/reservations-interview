@@ -39,7 +39,7 @@ namespace Controllers
         [HttpGet, Route("check")]
         public IActionResult CheckCookie()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
+            if (IsNotStaff(Request, out ActionResult? result))
             {
                 return result!;
             }

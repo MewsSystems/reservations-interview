@@ -9,7 +9,7 @@ namespace Controllers
         /// <summary>
         /// Checks if the request is from a staff member, if not returns true and a 403 result
         /// </summary>
-        protected bool IsNotStaff(HttpRequest request, out IActionResult? result)
+        protected bool IsNotStaff(HttpRequest request, out ActionResult? result)
         {
             // TODO explore UseAuthentication
             request.Cookies.TryGetValue(StaffAccessCookieName, out string? accessValue);

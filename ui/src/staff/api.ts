@@ -38,6 +38,17 @@ export async function loginStaff(accessCode: string) {
   return checkStaffSession();
 }
 
+export function checkInReservation(reservationId: string, guestEmail: string) {
+  return staffClient
+    .post(`api/reservation/${reservationId}/check-in`, {
+      json: {
+        GuestEmail: guestEmail,
+      },
+    })
+    .json()
+    .then(StaffReservationSchema.parseAsync);
+}
+
 export function useGetStaffReservations(enabled: boolean) {
   return useQuery({
     queryKey: ["staff", "reservations"],

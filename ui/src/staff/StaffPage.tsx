@@ -11,14 +11,21 @@ import {
   Text,
   TextField,
 } from "@radix-ui/themes";
+import { HTTPError } from "ky";
 import { LoadingCard } from "../components/LoadingCard";
-import { useShowInfoToast, useShowSuccessToast } from "../utils/toasts";
 import {
+  showInfoToast,
+  useShowInfoToast,
+  useShowSuccessToast,
+} from "../utils/toasts";
+import {
+  checkInReservation,
   checkStaffSession,
   loginStaff,
   StaffReservation,
   useGetStaffReservations,
 } from "./api";
+import { useQueryClient } from "@tanstack/react-query";
 
 const RESERVATION_GRID_COLS: React.ComponentProps<typeof Grid>["columns"] = {
   sm: "1",
@@ -31,10 +38,16 @@ const DimSlot = styled(TextField.Slot)`
 `;
 
 export function StaffPage() {
+  const queryClient = useQueryClient();
   const [accessCode, setAccessCode] = useState("");
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [isCheckingAccess, setIsCheckingAccess] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [isCheckingInReservationId, setIsCheckingInReservationId] =
+    useState("");
+  const [reservationFilter, setReservationFilter] = useState<
+    "upcoming" | "today"
+  >("upcoming");
   const showMissingCodeToast = useShowInfoToast(
     "Enter the shared access code.",
   );
@@ -42,11 +55,20 @@ export function StaffPage() {
     "That access code is incorrect.",
   );
   const showStaffWelcomeToast = useShowSuccessToast("Welcome back.");
+  const showCheckInSuccessToast = useShowSuccessToast(
+    "The guest has been checked in.",
+  );
   const {
     data: reservations,
     isLoading: isLoadingReservations,
     isError: hasReservationsError,
   } = useGetStaffReservations(isAuthorized);
+  const visibleReservations =
+    reservations?.filter((reservation) =>
+      reservationFilter === "today"
+        ? isReservationForToday(reservation.start)
+        : true,
+    ) ?? [];
 
   useEffect(() => {
     let isCancelled = false;
@@ -99,6 +121,30 @@ export function StaffPage() {
     } finally {
       setIsLoggingIn(false);
       setIsCheckingAccess(false);
+    }
+  }
+
+  async function handleCheckIn(reservationId: string, guestEmail: string) {
+    setIsCheckingInReservationId(reservationId);
+
+    try {
+      await checkInReservation(reservationId, guestEmail);
+      await queryClient.invalidateQueries({
+        queryKey: ["staff", "reservations"],
+      });
+      showCheckInSuccessToast();
+    } catch (error) {
+      if (error instanceof HTTPError) {
+        const errorMessage = await error.response.text();
+        if (errorMessage) {
+          showInfoToast(errorMessage);
+          return;
+        }
+      }
+
+      showInfoToast("We could not check in the guest right now.");
+    } finally {
+      setIsCheckingInReservationId("");
     }
   }
 
@@ -159,8 +205,29 @@ export function StaffPage() {
   return (
     <Section size="2" px="2">
       <Heading size="8" as="h1" color="mint">
-        Upcoming Reservations
+        {reservationFilter === "today"
+          ? "Today's Reservations"
+          : "Upcoming Reservations"}
       </Heading>
+
+      <Flex gap="3" px="4" mt="6">
+        <Button
+          size="3"
+          color="mint"
+          variant={reservationFilter === "upcoming" ? "solid" : "soft"}
+          onClick={() => setReservationFilter("upcoming")}
+        >
+          All Upcoming
+        </Button>
+        <Button
+          size="3"
+          color="mint"
+          variant={reservationFilter === "today" ? "solid" : "soft"}
+          onClick={() => setReservationFilter("today")}
+        >
+          Today
+        </Button>
+      </Flex>
 
       {isLoadingReservations && (
         <Grid columns={RESERVATION_GRID_COLS} gap="4" px="4" mt="8">
@@ -168,13 +235,17 @@ export function StaffPage() {
         </Grid>
       )}
 
-      {!isLoadingReservations && reservations?.length === 0 && (
-        <Card size="4" mt="8" mx="4">
-          <Text size="4">
-            There are no reservations scheduled for today or later.
-          </Text>
-        </Card>
-      )}
+      {!isLoadingReservations &&
+        !hasReservationsError &&
+        visibleReservations.length === 0 && (
+          <Card size="4" mt="8" mx="4">
+            <Text size="4">
+              {reservationFilter === "today"
+                ? "There are no reservations starting today."
+                : "There are no reservations scheduled for today or later."}
+            </Text>
+          </Card>
+        )}
 
       {hasReservationsError && (
         <Card size="4" mt="8" mx="4">
@@ -184,12 +255,14 @@ export function StaffPage() {
         </Card>
       )}
 
-      {reservations && reservations.length > 0 && (
+      {visibleReservations.length > 0 && (
         <Grid columns={RESERVATION_GRID_COLS} gap="4" px="4" mt="8">
-          {reservations.map((reservation) => (
+          {visibleReservations.map((reservation) => (
             <ReservationSummaryCard
               key={reservation.id}
               reservation={reservation}
+              isCheckingIn={isCheckingInReservationId === reservation.id}
+              onCheckIn={handleCheckIn}
             />
           ))}
         </Grid>
@@ -200,9 +273,30 @@ export function StaffPage() {
 
 function ReservationSummaryCard({
   reservation,
+  isCheckingIn,
+  onCheckIn,
 }: {
   reservation: StaffReservation;
+  isCheckingIn: boolean;
+  onCheckIn: (reservationId: string, guestEmail: string) => Promise<void>;
 }) {
+  const [confirmationEmail, setConfirmationEmail] = useState("");
+  const showMissingConfirmationToast = useShowInfoToast(
+    "Enter the guest email to confirm check in.",
+  );
+  const canCheckIn =
+    isReservationForToday(reservation.start) && !reservation.checkedIn;
+
+  async function handleCheckIn() {
+    if (!confirmationEmail.trim()) {
+      showMissingConfirmationToast();
+      return;
+    }
+
+    await onCheckIn(reservation.id, confirmationEmail.trim());
+    setConfirmationEmail("");
+  }
+
   return (
     <Card size="4">
       <Flex direction="column" gap="3">
@@ -226,6 +320,45 @@ function ReservationSummaryCard({
             {formatDate(reservation.start)} to {formatDate(reservation.end)}
           </Text>
         </Box>
+        <Box>
+          <Text size="2" color="gray">
+            Status
+          </Text>
+          <Text size="3">
+            {reservation.checkedIn ? "Checked in" : "Not checked in"}
+          </Text>
+        </Box>
+
+        {canCheckIn && (
+          <Flex direction="column" gap="3">
+            <Text size="2" color="gray">
+              Confirm guest email to check in today&apos;s arrival.
+            </Text>
+            <TextField.Root
+              placeholder="... guest@email.com ..."
+              value={confirmationEmail}
+              onChange={(evt) => setConfirmationEmail(evt.target.value)}
+              type="email"
+              size="3"
+              disabled={isCheckingIn}
+            >
+              <DimSlot side="left" prefix="guest">
+                Email
+              </DimSlot>
+            </TextField.Root>
+            <Flex justify="end">
+              <Button
+                size="3"
+                color="mint"
+                onClick={handleCheckIn}
+                loading={isCheckingIn}
+                disabled={isCheckingIn}
+              >
+                Check In
+              </Button>
+            </Flex>
+          </Flex>
+        )}
       </Flex>
     </Card>
   );
@@ -235,4 +368,15 @@ function formatDate(dateValue: string) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: "medium",
   }).format(new Date(dateValue));
+}
+
+function isReservationForToday(dateValue: string) {
+  const reservationDate = new Date(dateValue);
+  const today = new Date();
+
+  return (
+    reservationDate.getFullYear() === today.getFullYear() &&
+    reservationDate.getMonth() === today.getMonth() &&
+    reservationDate.getDate() === today.getDate()
+  );
 }
