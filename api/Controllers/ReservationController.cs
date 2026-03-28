@@ -6,7 +6,7 @@ using Repositories;
 namespace Controllers
 {
     [Tags("Reservations"), Route("reservation")]
-    public class ReservationController : Controller
+    public class ReservationController : StaffAccessController
     {
         private ReservationRepository _repo { get; set; }
 
@@ -18,7 +18,12 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
+            if (IsNotStaff(Request, out IActionResult? result))
+            {
+                return result!;
+            }
+
+            var reservations = await _repo.GetUpcomingReservations();
 
             return Json(reservations);
         }
@@ -26,6 +31,11 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("{reservationId}")]
         public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
         {
+            if (IsNotStaff(Request, out IActionResult? result))
+            {
+                return result!;
+            }
+
             try
             {
                 var reservation = await _repo.GetReservation(reservationId);

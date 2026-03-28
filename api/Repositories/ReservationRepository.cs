@@ -35,6 +35,27 @@ namespace Repositories
             return reservations.Select(r => r.ToDomain());
         }
 
+        public async Task<IEnumerable<Reservation>> GetUpcomingReservations()
+        {
+            var today = DateTime.Today;
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                @"
+                SELECT *
+                FROM Reservations
+                WHERE End > @today
+                ORDER BY Start ASC, RoomNumber ASC;
+                ",
+                new { today }
+            );
+
+            if (reservations == null)
+            {
+                return [];
+            }
+
+            return reservations.Select(r => r.ToDomain());
+        }
+
         /// <summary>
         /// Find a reservation by its Guid ID, throwing if not found
         /// </summary>
