@@ -29,8 +29,28 @@ namespace Models
             return number.ToString().PadLeft(3, '0');
         }
 
+        public static bool IsValidRoomNumber(string roomNumber)
+        {
+            if (roomNumber.Length != 3)
+            {
+                return false;
+            }
+
+            if (!roomNumber.All(char.IsAsciiDigit))
+            {
+                return false;
+            }
+
+            return roomNumber[1] != '0' || roomNumber[2] != '0';
+        }
+
         public static int ConvertRoomNumberToInt(string roomNumber)
         {
+            if (!IsValidRoomNumber(roomNumber))
+            {
+                throw new InvalidRoomNumber(roomNumber);
+            }
+
             var success = int.TryParse(roomNumber, out int roomNumberInt);
             if (!success)
             {

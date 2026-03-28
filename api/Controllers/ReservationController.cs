@@ -6,7 +6,7 @@ using Repositories;
 namespace Controllers
 {
     [Tags("Reservations"), Route("reservation")]
-    public class ReservationController : Controller
+    public class ReservationController : StaffAccessController
     {
         private ReservationRepository _repo { get; set; }
 
@@ -18,7 +18,12 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
+            if (IsNotStaff(Request, out ActionResult? result))
+            {
+                return result!;
+            }
+
+            var reservations = await _repo.GetUpcomingReservations();
 
             return Json(reservations);
         }
@@ -26,6 +31,11 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("{reservationId}")]
         public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
         {
+            if (IsNotStaff(Request, out ActionResult? result))
+            {
+                return result!;
+            }
+
             try
             {
                 var reservation = await _repo.GetReservation(reservationId);
@@ -56,7 +66,19 @@ namespace Controllers
             try
             {
                 var createdReservation = await _repo.CreateReservation(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
+                return Created($"/reservation/{createdReservation.Id}", createdReservation);
+            }
+            catch (ReservationConflictException ex)
+            {
+                return Conflict(ex.Message);
+            }
+            catch (InvalidReservationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -73,6 +95,36 @@ namespace Controllers
             var result = await _repo.DeleteReservation(reservationId);
 
             return result ? NoContent() : NotFound();
+        }
+
+        [HttpPost, Produces("application/json"), Route("{reservationId}/check-in")]
+        public async Task<ActionResult<Reservation>> CheckInReservation(
+            Guid reservationId,
+            [FromBody] CheckInReservationRequest request
+        )
+        {
+            if (IsNotStaff(Request, out ActionResult? result))
+            {
+                return result!;
+            }
+
+            try
+            {
+                var checkedInReservation = await _repo.CheckInReservation(
+                    reservationId,
+                    request.GuestEmail
+                );
+
+                return Json(checkedInReservation);
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+            catch (InvalidCheckInException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
