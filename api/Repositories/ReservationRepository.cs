@@ -64,6 +64,7 @@ namespace Repositories
             ValidateReservation(newReservation);
 
             await _roomRepository.GetRoom(newReservation.RoomNumber);
+            await EnsureNoReservationConflict(newReservation);
             await EnsureGuestExists(newReservation.GuestEmail);
 
             var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
@@ -200,6 +201,34 @@ namespace Repositories
             {
                 await _guestRepository.CreateGuest(
                     new Guest { Email = guestEmail, Name = BuildGuestName(guestEmail) }
+                );
+            }
+        }
+
+        private async Task EnsureNoReservationConflict(Reservation newReservation)
+        {
+            var roomNumber = Room.ConvertRoomNumberToInt(newReservation.RoomNumber);
+            var conflictingReservation = await _db.QueryFirstOrDefaultAsync<string>(
+                @"
+                SELECT Id
+                FROM Reservations
+                WHERE RoomNumber = @roomNumber
+                  AND Start < @reservationEnd
+                  AND End > @reservationStart
+                LIMIT 1;
+                ",
+                new
+                {
+                    roomNumber,
+                    reservationStart = newReservation.Start,
+                    reservationEnd = newReservation.End
+                }
+            );
+
+            if (!string.IsNullOrEmpty(conflictingReservation))
+            {
+                throw new ReservationConflictException(
+                    $"Room {newReservation.RoomNumber} is already booked for the selected dates."
                 );
             }
         }
