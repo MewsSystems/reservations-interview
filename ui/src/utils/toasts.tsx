@@ -21,12 +21,12 @@ export function useShowSuccessToast(message: string) {
 }
 
 export function useShowInfoToast(message: string) {
-  return useCallback(
-    () =>
-      toast.custom(
-        (t) => <InfoToast toastId={t} message={message} />,
-        DEFAULT_TOAST_OPTIONS,
-      ),
-    [message],
+  return useCallback(() => showInfoToast(message), [message]);
+}
+
+export function showInfoToast(message: string) {
+  return toast.custom(
+    (t) => <InfoToast toastId={t} message={message} />,
+    DEFAULT_TOAST_OPTIONS,
   );
 }

@@ -56,7 +56,15 @@ namespace Controllers
             try
             {
                 var createdReservation = await _repo.CreateReservation(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
+                return Created($"/reservation/{createdReservation.Id}", createdReservation);
+            }
+            catch (InvalidReservationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (NotFoundException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {

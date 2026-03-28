@@ -12,12 +12,12 @@ import styled from "styled-components";
 
 interface BookingDetailsModalProps {
   roomNumber: string;
-  onSubmit: (booking: NewReservation) => void;
+  onSubmit: (booking: NewReservation) => Promise<void>;
 }
 
 interface BookingFormProps {
   roomNumber: string;
-  onSubmit: (booking: NewReservation) => void;
+  onSubmit: (booking: NewReservation) => Promise<void>;
 }
 
 /** Must be inside a Dialog.Root that container Dialog.Triggers elsewhere */
@@ -54,25 +54,50 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
     null,
     null,
   ]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
   const showProcessingToast = useShowInfoToast("Processing booking...");
   const showNoInfoToast = useShowInfoToast("Missing email or dates.");
+  const showInvalidEmailToast = useShowInfoToast(
+    "Enter an email with a domain.",
+  );
+  const showInvalidDateToast = useShowInfoToast(
+    "Choose a stay from 1 to 30 days.",
+  );
 
-  function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
+  async function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
     if (!email || !dateRange[0] || !dateRange[1]) {
       showNoInfoToast();
       evt.preventDefault();
-      return false;
+      return;
+    }
+
+    if (!looksLikeEmailWithDomain(email)) {
+      showInvalidEmailToast();
+      evt.preventDefault();
+      return;
+    }
+
+    const durationMs = dateRange[1].getTime() - dateRange[0].getTime();
+    if (durationMs < ONE_DAY_MS || durationMs > MAX_DURATION_MS) {
+      showInvalidDateToast();
+      evt.preventDefault();
+      return;
     }
 
     showProcessingToast();
-    onSubmit({
-      RoomNumber: roomNumber,
-      GuestEmail: email,
-      Start: fromDateStringToIso(dateRange[0]),
-      End: fromDateStringToIso(dateRange[1]),
-    });
-    return true;
+    setIsSubmitting(true);
+
+    try {
+      await onSubmit({
+        RoomNumber: roomNumber,
+        GuestEmail: email.trim(),
+        Start: fromDateStringToIso(dateRange[0]),
+        End: fromDateStringToIso(dateRange[1]),
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleDateChange(data: OnDatesChangeProps) {
@@ -101,6 +126,7 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         type="email"
         size="3"
         mb="4"
+        disabled={isSubmitting}
       >
         <DimSlot side="left" prefix="email">
           Email
@@ -121,12 +147,31 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         showResetDates={false}
       />
       <BottomRightBox>
-        <Dialog.Close>
-          <Button size="3" color="mint" mt="4" onClick={handleSubmit}>
-            Reserve
-          </Button>
-        </Dialog.Close>
+        <Button
+          size="3"
+          color="mint"
+          mt="4"
+          onClick={handleSubmit}
+          loading={isSubmitting}
+          disabled={isSubmitting}
+        >
+          Reserve
+        </Button>
       </BottomRightBox>
     </Box>
+  );
+}
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_DURATION_MS = ONE_DAY_MS * 30;
+
+function looksLikeEmailWithDomain(email: string) {
+  const [localPart, domain, ...rest] = email.trim().split("@");
+
+  return (
+    localPart.length > 0 &&
+    domain !== undefined &&
+    domain.includes(".") &&
+    rest.length === 0
   );
 }

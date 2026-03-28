@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { useShowSuccessToast } from "../utils/toasts";
+import {
+  showInfoToast,
+  useShowInfoToast,
+  useShowSuccessToast,
+} from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
+import { HTTPError } from "ky";
 
 const RESPONSIVE_GRID_COLS: React.ComponentProps<typeof Grid>["columns"] = {
   sm: "1",
@@ -19,13 +24,30 @@ export function ReservationPage() {
   const formattedRoomNumber = String(selectedRoomNumber).padStart(3, "0");
 
   const showToast = useShowSuccessToast("We have received your booking!");
+  const showBookingErrorToast = useShowInfoToast(
+    "We could not complete your booking.",
+  );
 
   function onClose() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+  async function onSubmit(booking: NewReservation) {
+    try {
+      await bookRoom(booking);
+      onClose();
+      showToast();
+    } catch (error) {
+      if (error instanceof HTTPError) {
+        const errorMessage = await error.response.text();
+        if (errorMessage) {
+          showInfoToast(errorMessage);
+          return;
+        }
+      }
+
+      showBookingErrorToast();
+    }
   }
 
   const createClickHandler = (roomNumber: string) => () => {
@@ -39,7 +61,14 @@ export function ReservationPage() {
       </Heading>
 
       <Grid columns={RESPONSIVE_GRID_COLS} gap="4" px="4" mt="8">
-        <Dialog.Root>
+        <Dialog.Root
+          open={selectedRoomNumber.length > 0}
+          onOpenChange={(open) => {
+            if (!open) {
+              onClose();
+            }
+          }}
+        >
           {isLoading && <LoadingCard />}
           {rooms?.map((room) => (
             <ReservationCard

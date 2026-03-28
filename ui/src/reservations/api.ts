@@ -22,15 +22,19 @@ const ReservationSchema = z.object({
 type Reservation = z.infer<typeof ReservationSchema>;
 
 export function bookRoom(booking: NewReservation) {
-  // unwrap branded types
   const newReservation = {
+    Id: "00000000-0000-0000-0000-000000000000",
     ...booking,
     Start: toIsoStr(booking.Start),
     End: toIsoStr(booking.End),
+    CheckedIn: false,
+    CheckedOut: false,
   };
 
-  // TODO post some json with ky.post()
-  return Promise.resolve<Reservation>(newReservation as any as Reservation);
+  return ky
+    .post("api/reservation", { json: newReservation })
+    .json()
+    .then(ReservationSchema.parseAsync);
 }
 
 const RoomSchema = z.object({
