@@ -1,7 +1,7 @@
 ﻿using Validators;
 using Models;
 
-namespace Reservations.Tests;
+namespace Reservations.Tests.Unit.Validators;
 
 public class ReservationValidatorTests
 {

@@ -54,6 +54,14 @@ namespace Repositories
             EmailValidator.Validate(newReservation.GuestEmail);
             RoomValidator.ValidateRoomNumber(newReservation.RoomNumber);
 
+            var hasConflict = await HasConflictingReservation(
+                newReservation.RoomNumber,
+                newReservation.Start,
+                newReservation.End);
+
+            if (hasConflict)
+                throw new InvalidOperationException("Room is already booked for the selected dates.");
+
             var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
                 @"INSERT INTO Reservations (Id, RoomNumber, GuestEmail, Start, End, CheckedIn, CheckedOut)
                 VALUES (@Id, @RoomNumber, @GuestEmail, @Start, @End, @CheckedIn, @CheckedOut)
@@ -72,6 +80,26 @@ namespace Repositories
             );
 
             return deleted > 0;
+        }
+        
+        public async Task<bool> HasConflictingReservation(string roomNumber, DateTime start, DateTime end)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+
+            var count = await _db.ExecuteScalarAsync<int>(
+                @"SELECT COUNT(1)
+                FROM Reservations
+                WHERE RoomNumber = @RoomNumber
+                    AND @Start < End
+                    AND @End > Start;",
+                new
+                {
+                    RoomNumber = roomNumberInt,
+                    Start = start.Date.Ticks,
+                    End = end.Date.Ticks
+                });
+
+            return count > 0;
         }
 
         private class ReservationDb

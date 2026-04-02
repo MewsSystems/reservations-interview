@@ -1,6 +1,6 @@
 ﻿using Validators;
 
-namespace Reservations.Tests;
+namespace Reservations.Tests.Unit.Validators;
 
 public class EmailValidatorTests
 {
