@@ -6,6 +6,8 @@ import {
 import { Layout } from "./Layout";
 import { LandingPage } from "./LandingPage";
 import { ReservationPage } from "./reservations/ReservationPage";
+import { StaffLoginPage } from "./staff/StaffLoginPage";
+import { StaffDashboardPage } from "./staff/StaffDashboardPage";
 
 const rootRoute = createRootRoute({
   component: Layout,
@@ -25,6 +27,16 @@ const ROUTES = [
     path: "/reservations",
     getParentRoute: getRootRoute,
     component: ReservationPage,
+  }),
+  createRoute({
+    path: "/staff/login",
+    getParentRoute: getRootRoute,
+    component: StaffLoginPage,
+  }),
+  createRoute({
+    path: "/staff",
+    getParentRoute: getRootRoute,
+    component: StaffDashboardPage,
   }),
 ];
 

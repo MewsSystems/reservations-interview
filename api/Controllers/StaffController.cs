@@ -1,3 +1,7 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Controllers
@@ -12,58 +16,44 @@ namespace Controllers
             Config = config;
         }
 
-        /// <summary>
-        /// Checks if the request is from a staff member, if not returns true and a 403 result
-        /// </summary>
-        /// <param name="request"></param>
-        private bool IsNotStaff(HttpRequest request, out IActionResult? result)
-        {
-            // TODO explore UseAuthentication
-            request.Cookies.TryGetValue("access", out string? accessValue);
-
-            if (accessValue == null || accessValue == "0")
-            {
-                result = StatusCode(403);
-                return true;
-            }
-
-            result = null;
-            return false;
-        }
-
-        [HttpGet, Route("login")]
-        public IActionResult CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
+        [HttpPost, Route("login")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Login([FromHeader(Name = "X-Staff-Code")] string accessCode)
         {
             var configuredSecret = Config.GetValue<string>("staffAccessCode");
             if (configuredSecret != accessCode)
             {
-                // don't set cookie, don't indicate anything
-                return NoContent();
+                return Unauthorized(new { errors = new[] { "Invalid access code." } });
             }
-            Response.Cookies.Append(
-                "access",
-                "1",
-                new CookieOptions
-                // TODO evaluate cookie options & auth mechanism for best security practices
-                {
-                    IsEssential = true,
-                    SameSite = SameSiteMode.Strict,
-                    HttpOnly = true,
-                    Secure = true
-                }
+
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.Role, "Staff"),
+            };
+            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                principal
             );
-            return NoContent();
+
+            return Ok(new { message = "Logged in." });
+        }
+
+        [HttpPost, Route("logout")]
+        [Authorize]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok(new { message = "Logged out." });
         }
 
         [HttpGet, Route("check")]
-        public IActionResult CheckCookie()
+        [Authorize]
+        public IActionResult CheckAuth()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
-            {
-                return result!;
-            }
-
-            return Ok("Authorized");
+            return Ok(new { message = "Authorized." });
         }
     }
 }

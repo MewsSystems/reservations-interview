@@ -1,5 +1,3 @@
-using Models.Errors;
-
 namespace Models
 {
     /// <summary>
@@ -20,31 +18,19 @@ namespace Models
         public State State { get; set; } = State.Ready;
 
         /// <summary>
-        /// Formats the room number filling it with 0s
-        /// to get a three digit string
+        /// Whether the room needs cleaning
         /// </summary>
-        /// <returns></returns>
-        public static string FormatRoomNumber(int number)
-        {
-            return number.ToString().PadLeft(3, '0');
-        }
-
-        public static int ConvertRoomNumberToInt(string roomNumber)
-        {
-            var success = int.TryParse(roomNumber, out int roomNumberInt);
-            if (!success)
-            {
-                throw new InvalidRoomNumber(roomNumber);
-            }
-
-            return roomNumberInt;
-        }
+        public bool IsDirty { get; set; } = false;
     }
 
     public enum State
     {
         Ready = 0,
-        Occupied = 1,
-        Dirty = 2
+        Occupied = 1
+    }
+
+    public class RoomPatch
+    {
+        public bool? IsDirty { get; set; }
     }
 }

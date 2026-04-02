@@ -1,4 +1,4 @@
-import { Text, Card, Inset, Dialog } from "@radix-ui/themes";
+import { Text, Card, Inset, Dialog, Badge } from "@radix-ui/themes";
 import { PropsWithChildren } from "react";
 import styled from "styled-components";
 
@@ -14,6 +14,7 @@ export type ReservationCardProps = PropsWithChildren<{
   onClick: () => void;
   imgSrc: string;
   roomNumber: string;
+  isDirty?: boolean;
 }>;
 
 /** A Card wrapped in a Dialog.Trigger */
@@ -27,6 +28,9 @@ export function ReservationCard(props: ReservationCardProps) {
           </Inset>
           <Text size="5" align="left">
             Room #{props.roomNumber}
+            {props.isDirty && (
+              <Badge color="red" ml="2">Dirty</Badge>
+            )}
           </Text>
         </a>
       </Card>

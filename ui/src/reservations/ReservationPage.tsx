@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useShowSuccessToast } from "../utils/toasts";
+import { useShowSuccessToast, handleApiError } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
@@ -24,8 +24,14 @@ export function ReservationPage() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+  async function onSubmit(booking: NewReservation) {
+    try {
+      await bookRoom(booking);
+      onClose();
+      showToast();
+    } catch (err) {
+      await handleApiError(err, "An unexpected error occurred.");
+    }
   }
 
   const createClickHandler = (roomNumber: string) => () => {
@@ -46,6 +52,7 @@ export function ReservationPage() {
               key={room.number}
               imgSrc="/bed.png"
               roomNumber={room.number}
+              isDirty={room.isDirty}
               onClick={createClickHandler(room.number)}
             />
           ))}

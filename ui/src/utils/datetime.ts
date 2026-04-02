@@ -34,6 +34,12 @@ export function getNowIso(): ISO8601String {
   return fromDate(new Date());
 }
 
+/** Returns a date-only string (YYYY-MM-DD) using the local date parts.
+ *  Hotel reservations are calendar dates — timezone of the booker is irrelevant. */
 export function toIsoStr(branded: ISO8601String): string {
-  return branded._value;
+  const d = branded._dateValue;
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }

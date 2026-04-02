@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { Theme } from "@radix-ui/themes";
 import "@radix-ui/themes/styles.css";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { AuthProvider } from "./staff/AuthContext";
 
 declare var root: HTMLDivElement;
 const queryClient = new QueryClient();
@@ -14,8 +15,10 @@ reactRoot.render(
   <React.StrictMode>
     <Theme accentColor="mint">
       <QueryClientProvider client={queryClient}>
-        <App />
-        <Toaster />
+        <AuthProvider>
+          <App />
+          <Toaster />
+        </AuthProvider>
       </QueryClientProvider>
     </Theme>
   </React.StrictMode>,

@@ -44,7 +44,7 @@ namespace Repositories
         public Task<Guest> CreateGuest(Guest newGuest)
         {
             return _db.QuerySingleAsync<Guest>(
-                "INSERT INTO Guests(Email, Name) Values(@Email, @Name) RETURNING *",
+                "INSERT INTO Guests(Email, Name, Surname) Values(@Email, @Name, @Surname) RETURNING *",
                 newGuest
             );
         }
