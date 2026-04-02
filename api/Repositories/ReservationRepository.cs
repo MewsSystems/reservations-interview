@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Validators;
 
 namespace Repositories
 {
@@ -41,7 +42,7 @@ namespace Repositories
 
             if (reservation == null)
             {
-                throw new NotFoundException($"Room {reservationId} not found");
+                throw new NotFoundException($"Reservation {reservationId} not found");
             }
 
             return reservation.ToDomain();
@@ -49,10 +50,18 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            ReservationValidator.ValidateForCreate(newReservation);
+            EmailValidator.Validate(newReservation.GuestEmail);
+            RoomValidator.ValidateRoomNumber(newReservation.RoomNumber);
+
+            var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
+                @"INSERT INTO Reservations (Id, RoomNumber, GuestEmail, Start, End, CheckedIn, CheckedOut)
+                VALUES (@Id, @RoomNumber, @GuestEmail, @Start, @End, @CheckedIn, @CheckedOut)
+                RETURNING *;",
+                new ReservationDb(newReservation)
             );
+
+            return createdReservation.ToDomain();
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)

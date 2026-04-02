@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useShowSuccessToast } from "../utils/toasts";
+import { useShowSuccessToast, useShowInfoToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
+import { HTTPError } from "ky";
 
 const RESPONSIVE_GRID_COLS: React.ComponentProps<typeof Grid>["columns"] = {
   sm: "1",
@@ -17,15 +18,29 @@ export function ReservationPage() {
   const [selectedRoomNumber, setSelectedRoomNumber] = useState("");
 
   const formattedRoomNumber = String(selectedRoomNumber).padStart(3, "0");
-
-  const showToast = useShowSuccessToast("We have received your booking!");
+  const showSuccessToast = useShowSuccessToast();
+  const showInfoToast = useShowInfoToast();
 
   function onClose() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+  async function onSubmit(booking: NewReservation) {
+    try {
+      await bookRoom(booking);
+      onClose();
+      showSuccessToast("We have received your booking!");
+    } catch (error) {
+      console.error("Booking failed", error);
+
+      let message = "Booking failed.";
+
+      if (error instanceof HTTPError) {
+        message = await error.response.text().catch(() => message);
+      }
+      
+      showInfoToast(message);
+    }
   }
 
   const createClickHandler = (roomNumber: string) => () => {

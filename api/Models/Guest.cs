@@ -11,7 +11,7 @@ namespace Models
         /// Free form name field to accomodate any and all naming
         /// cultures the guest may have
         /// </summary>
-        public required string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// If there is a clear surname, this can be used
@@ -25,7 +25,7 @@ namespace Models
         /// <returns></returns>
         public string GetLastName()
         {
-            return Surname ?? Name;
+            return Surname ?? Name ?? Email;
         }
     }
 }

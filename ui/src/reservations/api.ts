@@ -1,13 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { ISO8601String, toIsoStr } from "../utils/datetime";
 import ky from "ky";
 import { z } from "zod";
 
 export interface NewReservation {
   RoomNumber: string;
   GuestEmail: string;
-  Start: ISO8601String;
-  End: ISO8601String;
+  Start: Date;
+  End: Date;
 }
 
 /** The schema the API returns */
@@ -22,15 +21,17 @@ const ReservationSchema = z.object({
 type Reservation = z.infer<typeof ReservationSchema>;
 
 export function bookRoom(booking: NewReservation) {
-  // unwrap branded types
   const newReservation = {
     ...booking,
-    Start: toIsoStr(booking.Start),
-    End: toIsoStr(booking.End),
+    Start: toDateOnlyStr(booking.Start),
+    End: toDateOnlyStr(booking.End),
   };
 
-  // TODO post some json with ky.post()
-  return Promise.resolve<Reservation>(newReservation as any as Reservation);
+  return ky
+    .post("api/reservation", {
+      json: newReservation,
+    })
+    .json<Reservation>();
 }
 
 const RoomSchema = z.object({
@@ -45,4 +46,12 @@ export function useGetRooms() {
     queryKey: ["rooms"],
     queryFn: () => ky.get("api/room").json().then(RoomListSchema.parseAsync),
   });
+}
+
+function toDateOnlyStr(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
