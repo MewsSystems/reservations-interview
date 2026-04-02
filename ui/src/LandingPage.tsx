@@ -1,9 +1,30 @@
 import { Box, Card, Flex, Heading, Inset } from "@radix-ui/themes";
 import { Link } from "@tanstack/react-router";
 
-function handleLogin() {
-  // TODO have a staff view
-  alert("Not implemented");
+async function handleLogin() {
+  const code = prompt("Enter staff access code");
+
+  if (!code) return;
+
+  try {
+    const response = await fetch("api/staff/login", {
+      method: "POST",
+      headers: {
+        "X-Staff-Code": code,
+      },
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      alert("Invalid access code");
+      return;
+    }
+    
+    window.location.href = "/staff";
+  } catch (e) {
+    console.error(e);
+    alert("Login failed");
+  }
 }
 
 export function LandingPage() {

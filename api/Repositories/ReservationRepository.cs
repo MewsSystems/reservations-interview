@@ -95,11 +95,26 @@ namespace Repositories
                 new
                 {
                     RoomNumber = roomNumberInt,
-                    Start = start.Date.Ticks,
-                    End = end.Date.Ticks
+                    Start = start.Date,
+                    End = end.Date
                 });
 
             return count > 0;
+        }
+
+        public async Task<IEnumerable<Reservation>> GetTodayAndUpcomingReservations()
+        {
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                @"SELECT *
+                FROM Reservations
+                WHERE End >= @Today
+                ORDER BY Start;",
+                new
+                {
+                    DateTime.Today
+                });
+
+            return reservations.Select(r => r.ToDomain());
         }
 
         private class ReservationDb
