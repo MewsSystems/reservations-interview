@@ -59,23 +59,9 @@ namespace Controllers
             if (newRoom == null)
                 return BadRequest("Request body is required.");
 
-            try
-            {
-                var createdRoom = await _repo.CreateRoom(newRoom);
-                return Created($"/room/{createdRoom.Number}", createdRoom);
-            }
-            catch (InvalidRoomNumber ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
-            catch (Exception)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+            var createdRoom = await _repo.CreateRoom(newRoom);
+            
+            return Created($"/room/{createdRoom.Number}", createdRoom);
         }
 
         [HttpDelete, Produces("application/json"), Route("{roomNumber}")]

@@ -48,43 +48,22 @@ namespace Controllers
             if (newBooking.Id == Guid.Empty)
                 newBooking.Id = Guid.NewGuid();
 
-            try
+            if (!await _roomRepository.RoomExists(newBooking.RoomNumber))
+                throw new NotFoundException($"Room {newBooking.RoomNumber} does not exist.");
+
+            var guest = await _guestRepository.GetGuestByEmail(newBooking.GuestEmail);
+
+            if (guest == null)
             {
-                if (!await _roomRepository.RoomExists(newBooking.RoomNumber))
-                    throw new NotFoundException($"Room {newBooking.RoomNumber} does not exist.");
-
-                var guest = await _guestRepository.GetGuestByEmail(newBooking.GuestEmail);
-
-                if (guest == null)
+                await _guestRepository.CreateGuest(new Guest
                 {
-                    await _guestRepository.CreateGuest(new Guest
-                    {
-                        Email = newBooking.GuestEmail
-                    });
-                }
+                    Email = newBooking.GuestEmail
+                });
+            }
 
-                var createdReservation = await _reservationRepository.CreateReservation(newBooking);
+            var createdReservation = await _reservationRepository.CreateReservation(newBooking);
 
-                return Created($"/reservation/{createdReservation.Id}", createdReservation);
-            }
-            catch (ArgumentException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (NotFoundException ex)
-            {
-                return NotFound(ex.Message);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return Conflict(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                //TODO: Proper error logging 
-                Console.WriteLine(ex);
-                return StatusCode(500, "Internal server error");
-            }
+            return Created($"/reservation/{createdReservation.Id}", createdReservation);
         }
 
         [HttpDelete("{reservationId}")]
