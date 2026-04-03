@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Validators;
 
 namespace Repositories
 {
@@ -51,8 +52,13 @@ namespace Repositories
 
         public async Task<Room> CreateRoom(Room newRoom)
         {
+            RoomValidator.ValidateRoomNumber(newRoom.Number);
+
+            if (await RoomExists(newRoom.Number))
+                throw new InvalidOperationException("Room already exists.");
+
             var createdRoom = await _db.QuerySingleAsync<RoomDb>(
-                "INSERT INTO Rooms(Number, State) Values(@Number, @State) RETURNING *",
+                "INSERT INTO Rooms(Number, State) VALUES(@Number, @State) RETURNING *",
                 new RoomDb(newRoom)
             );
 
@@ -69,6 +75,18 @@ namespace Repositories
             );
 
             return deleted > 0;
+        }
+
+        public async Task<bool> RoomExists(string roomNumber)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+
+            var count = await _db.ExecuteScalarAsync<int>(
+                "SELECT COUNT(1) FROM Rooms WHERE Number = @roomNumberInt;",
+                new { roomNumberInt }
+            );
+
+            return count > 0;
         }
 
         // Inner class to hide the details of a direct mapping to SQLite

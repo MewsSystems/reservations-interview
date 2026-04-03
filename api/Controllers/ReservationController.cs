@@ -8,33 +8,30 @@ namespace Controllers
     [Tags("Reservations"), Route("reservation")]
     public class ReservationController : Controller
     {
-        private ReservationRepository _repo { get; set; }
+        private readonly ReservationRepository _reservationRepository;
+        private readonly RoomRepository _roomRepository;
+        private readonly GuestRepository _guestRepository;
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public ReservationController(ReservationRepository reservationRepository, RoomRepository roomRepository, GuestRepository guestRepository)
         {
-            _repo = reservationRepository;
+            _reservationRepository = reservationRepository;
+            _roomRepository = roomRepository;
+            _guestRepository = guestRepository;
         }
 
-        [HttpGet, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Reservation>> GetReservations()
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
+            var reservations = await _reservationRepository.GetReservations();
 
             return Json(reservations);
         }
 
-        [HttpGet, Produces("application/json"), Route("{reservationId}")]
-        public async Task<ActionResult<Reservation>> GetRoom(Guid reservationId)
+        [HttpGet("{reservationId}")]
+        public async Task<ActionResult<Reservation>> GetReservation(Guid reservationId)
         {
-            try
-            {
-                var reservation = await _repo.GetReservation(reservationId);
-                return Json(reservation);
-            }
-            catch (NotFoundException)
-            {
-                return NotFound();
-            }
+            var reservation = await _reservationRepository.GetReservation(reservationId);
+            return Json(reservation);
         }
 
         /// <summary>
@@ -42,35 +39,37 @@ namespace Controllers
         /// </summary>
         /// <param name="newBooking"></param>
         /// <returns></returns>
-        [HttpPost, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Reservation>> BookReservation(
-            [FromBody] Reservation newBooking
-        )
+        [HttpPost]
+        public async Task<ActionResult<Reservation>> BookReservation([FromBody] Reservation newBooking)
         {
-            // Provide a real ID if one is not provided
+            if (newBooking == null)
+                return BadRequest("Request body is required.");
+
             if (newBooking.Id == Guid.Empty)
-            {
                 newBooking.Id = Guid.NewGuid();
+
+            if (!await _roomRepository.RoomExists(newBooking.RoomNumber))
+                throw new NotFoundException($"Room {newBooking.RoomNumber} does not exist.");
+
+            var guest = await _guestRepository.GetGuestByEmail(newBooking.GuestEmail);
+
+            if (guest == null)
+            {
+                await _guestRepository.CreateGuest(new Guest
+                {
+                    Email = newBooking.GuestEmail
+                });
             }
 
-            try
-            {
-                var createdReservation = await _repo.CreateReservation(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("An error occured when trying to book a reservation:");
-                Console.WriteLine(ex.ToString());
+            var createdReservation = await _reservationRepository.CreateReservation(newBooking);
 
-                return BadRequest("Invalid reservation");
-            }
+            return Created($"/reservation/{createdReservation.Id}", createdReservation);
         }
 
-        [HttpDelete, Produces("application/json"), Route("{reservationId}")]
+        [HttpDelete("{reservationId}")]
         public async Task<IActionResult> DeleteReservation(Guid reservationId)
         {
-            var result = await _repo.DeleteReservation(reservationId);
+            var result = await _reservationRepository.DeleteReservation(reservationId);
 
             return result ? NoContent() : NotFound();
         }

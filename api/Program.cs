@@ -1,6 +1,7 @@
 using System.Data;
 using Db;
 using Microsoft.Data.Sqlite;
+using Models.Errors;
 using Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,11 +13,16 @@ var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.GetConnectionString("ReservationsDb")
         ?? "Data Source=reservations.db;Cache=Shared";
 
-    Services.AddSingleton(_ => new SqliteConnection(connectionString));
-    Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
-    Services.AddSingleton<GuestRepository>();
-    Services.AddSingleton<RoomRepository>();
-    Services.AddSingleton<ReservationRepository>();
+    Services.AddScoped<SqliteConnection>(_ =>
+    {
+        var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        return connection;
+    });
+    Services.AddScoped<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
+    Services.AddScoped<GuestRepository>();
+    Services.AddScoped<RoomRepository>();
+    Services.AddScoped<ReservationRepository>();
     Services.AddMvc(opt =>
     {
         opt.EnableEndpointRouting = false;
@@ -41,7 +47,40 @@ var app = builder.Build();
         Environment.Exit(1);
         return;
     }
-
+    app.Use(async (context, next) =>
+    {
+        try
+        {
+            await next();
+        }
+        catch (NotFoundException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status404NotFound;
+            await context.Response.WriteAsync(ex.Message);
+        }
+        catch (InvalidRoomNumber ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsync(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status400BadRequest;
+            await context.Response.WriteAsync(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            context.Response.StatusCode = StatusCodes.Status409Conflict;
+            await context.Response.WriteAsync(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            await context.Response.WriteAsync("Internal server error");
+        }
+    });
+    
     app.UsePathBase("/api")
         .UseMvc()
         .UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader())

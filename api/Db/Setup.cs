@@ -22,7 +22,7 @@ namespace Db
                 $@"
               CREATE TABLE IF NOT EXISTS Guests (
                 {nameof(Guest.Email)} TEXT PRIMARY KEY NOT NULL,
-                {nameof(Guest.Name)} TEXT NOT NULL
+                {nameof(Guest.Name)} TEXT NULL
               );
             "
             );

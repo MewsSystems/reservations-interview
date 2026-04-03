@@ -9,24 +9,24 @@ const DEFAULT_TOAST_OPTIONS: ExternalToast = {
   duration: DEFAULT_TOAST_DURATION_MS,
 };
 
-export function useShowSuccessToast(message: string) {
+export function useShowSuccessToast() {
   return useCallback(
-    () =>
+    (message: string) =>
       toast.custom(
         (t) => <SuccessToast toastId={t} message={message} />,
         DEFAULT_TOAST_OPTIONS,
       ),
-    [message],
+    [],
   );
 }
 
-export function useShowInfoToast(message: string) {
+export function useShowInfoToast() {
   return useCallback(
-    () =>
+    (message: string) =>
       toast.custom(
         (t) => <InfoToast toastId={t} message={message} />,
         DEFAULT_TOAST_OPTIONS,
       ),
-    [message],
+    [],
   );
 }

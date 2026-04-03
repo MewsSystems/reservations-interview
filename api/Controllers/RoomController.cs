@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
 using Repositories;
+using Validators;
 
 namespace Controllers
 {
@@ -15,7 +16,7 @@ namespace Controllers
             _repo = roomRepository;
         }
 
-        [HttpGet, Produces("application/json"), Route("")]
+        [HttpGet]
         public async Task<ActionResult<Room>> GetRooms()
         {
             var rooms = await _repo.GetRooms();
@@ -28,7 +29,7 @@ namespace Controllers
             return Json(rooms);
         }
 
-        [HttpGet, Produces("application/json"), Route("{roomNumber}")]
+        [HttpGet("{roomNumber}")]
         public async Task<ActionResult<Room>> GetRoom(string roomNumber)
         {
             if (roomNumber.Length != 3)
@@ -48,17 +49,19 @@ namespace Controllers
             }
         }
 
-        [HttpPost, Produces("application/json"), Route("")]
+        [HttpPost]
+        [ProducesResponseType(typeof(Room), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<Room>> CreateRoom([FromBody] Room newRoom)
         {
+            if (newRoom == null)
+                return BadRequest("Request body is required.");
+
             var createdRoom = await _repo.CreateRoom(newRoom);
-
-            if (createdRoom == null)
-            {
-                return NotFound();
-            }
-
-            return Json(createdRoom);
+            
+            return Created($"/room/{createdRoom.Number}", createdRoom);
         }
 
         [HttpDelete, Produces("application/json"), Route("{roomNumber}")]

@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Validators;
 
 namespace Repositories
 {
@@ -41,7 +42,7 @@ namespace Repositories
 
             if (reservation == null)
             {
-                throw new NotFoundException($"Room {reservationId} not found");
+                throw new NotFoundException($"Reservation {reservationId} not found");
             }
 
             return reservation.ToDomain();
@@ -49,10 +50,26 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            ReservationValidator.ValidateForCreate(newReservation);
+            EmailValidator.Validate(newReservation.GuestEmail);
+            RoomValidator.ValidateRoomNumber(newReservation.RoomNumber);
+
+            var hasConflict = await HasConflictingReservation(
+                newReservation.RoomNumber,
+                newReservation.Start,
+                newReservation.End);
+
+            if (hasConflict)
+                throw new InvalidOperationException("Room is already booked for the selected dates.");
+
+            var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
+                @"INSERT INTO Reservations (Id, RoomNumber, GuestEmail, Start, End, CheckedIn, CheckedOut)
+                VALUES (@Id, @RoomNumber, @GuestEmail, @Start, @End, @CheckedIn, @CheckedOut)
+                RETURNING *;",
+                new ReservationDb(newReservation)
             );
+
+            return createdReservation.ToDomain();
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)
@@ -63,6 +80,41 @@ namespace Repositories
             );
 
             return deleted > 0;
+        }
+        
+        public async Task<bool> HasConflictingReservation(string roomNumber, DateTime start, DateTime end)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(roomNumber);
+
+            var count = await _db.ExecuteScalarAsync<int>(
+                @"SELECT COUNT(1)
+                FROM Reservations
+                WHERE RoomNumber = @RoomNumber
+                    AND @Start < End
+                    AND @End > Start;",
+                new
+                {
+                    RoomNumber = roomNumberInt,
+                    Start = start.Date,
+                    End = end.Date
+                });
+
+            return count > 0;
+        }
+
+        public async Task<IEnumerable<Reservation>> GetTodayAndUpcomingReservations()
+        {
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                @"SELECT *
+                FROM Reservations
+                WHERE End >= @Today
+                ORDER BY Start;",
+                new
+                {
+                    Today = DateTime.Today
+                });
+
+            return reservations.Select(r => r.ToDomain());
         }
 
         private class ReservationDb

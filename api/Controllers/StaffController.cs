@@ -1,29 +1,33 @@
 using Microsoft.AspNetCore.Mvc;
+using Models;
+using Repositories;
 
 namespace Controllers
 {
     [Route("staff")]
     public class StaffController : Controller
     {
-        private IConfiguration Config { get; set; }
+        private readonly ReservationRepository _reservationRepository;
+        private readonly IConfiguration _config;
 
-        public StaffController(IConfiguration config)
+        public StaffController(ReservationRepository reservationRepository, IConfiguration config)
         {
-            Config = config;
+            _reservationRepository = reservationRepository;
+            _config = config;
         }
 
         /// <summary>
         /// Checks if the request is from a staff member, if not returns true and a 403 result
         /// </summary>
         /// <param name="request"></param>
-        private bool IsNotStaff(HttpRequest request, out IActionResult? result)
+        private bool IsNotStaff(HttpRequest request, out ActionResult? result)
         {
             // TODO explore UseAuthentication
             request.Cookies.TryGetValue("access", out string? accessValue);
 
-            if (accessValue == null || accessValue == "0")
+            if (accessValue != "1")
             {
-                result = StatusCode(403);
+                result = Unauthorized();
                 return true;
             }
 
@@ -31,15 +35,16 @@ namespace Controllers
             return false;
         }
 
-        [HttpGet, Route("login")]
-        public IActionResult CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
+        [HttpPost("login")]
+        public IActionResult Login([FromHeader(Name = "X-Staff-Code")] string accessCode)
         {
-            var configuredSecret = Config.GetValue<string>("staffAccessCode");
-            if (configuredSecret != accessCode)
+            var configuredSecret = _config.GetValue<string>("staffAccessCode");
+
+            if (string.IsNullOrWhiteSpace(accessCode) || configuredSecret != accessCode)
             {
-                // don't set cookie, don't indicate anything
-                return NoContent();
+                return Unauthorized();
             }
+
             Response.Cookies.Append(
                 "access",
                 "1",
@@ -52,18 +57,32 @@ namespace Controllers
                     Secure = true
                 }
             );
+
             return NoContent();
         }
 
-        [HttpGet, Route("check")]
+        [HttpGet("check")]
         public IActionResult CheckCookie()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
+            if (IsNotStaff(Request, out ActionResult? result))
             {
                 return result!;
             }
 
             return Ok("Authorized");
+        }
+
+        [HttpGet("reservations")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetUpcomingReservations()
+        {
+            if (IsNotStaff(Request, out ActionResult? result))
+            {
+                return result!;
+            }
+
+            var reservations = await _reservationRepository.GetTodayAndUpcomingReservations();
+
+            return Ok(reservations);
         }
     }
 }
