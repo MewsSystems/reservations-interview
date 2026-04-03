@@ -13,7 +13,7 @@ export function StaffPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/staff/reservations", {
+    fetch("api/staff/reservations", {
       credentials: "include",
     })
       .then(async (res) => {

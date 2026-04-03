@@ -111,7 +111,7 @@ namespace Repositories
                 ORDER BY Start;",
                 new
                 {
-                    DateTime.Today
+                    Today = DateTime.Today
                 });
 
             return reservations.Select(r => r.ToDomain());

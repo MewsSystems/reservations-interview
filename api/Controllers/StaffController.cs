@@ -8,12 +8,12 @@ namespace Controllers
     public class StaffController : Controller
     {
         private readonly ReservationRepository _reservationRepository;
-        private readonly IConfiguration _сonfig;
+        private readonly IConfiguration _config;
 
         public StaffController(ReservationRepository reservationRepository, IConfiguration config)
         {
             _reservationRepository = reservationRepository;
-            _сonfig = config;
+            _config = config;
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace Controllers
         [HttpPost("login")]
         public IActionResult Login([FromHeader(Name = "X-Staff-Code")] string accessCode)
         {
-            var configuredSecret = _сonfig.GetValue<string>("staffAccessCode");
+            var configuredSecret = _config.GetValue<string>("staffAccessCode");
 
             if (string.IsNullOrWhiteSpace(accessCode) || configuredSecret != accessCode)
             {
@@ -75,21 +75,14 @@ namespace Controllers
         [HttpGet("reservations")]
         public async Task<ActionResult<IEnumerable<Reservation>>> GetUpcomingReservations()
         {
-            try
+            if (IsNotStaff(Request, out ActionResult? result))
             {
-                if (IsNotStaff(Request, out ActionResult? result))
-                {
-                    return result!;
-                }
-
-                var reservations = await _reservationRepository.GetTodayAndUpcomingReservations();
-
-                return Ok(reservations);
+                return result!;
             }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Internal server error");
-            }
+
+            var reservations = await _reservationRepository.GetTodayAndUpcomingReservations();
+
+            return Ok(reservations);
         }
     }
 }

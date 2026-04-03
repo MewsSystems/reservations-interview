@@ -47,8 +47,8 @@ public class ReservationRepositoryIntegrationTests : IDisposable
             Id = Guid.NewGuid().ToString(),
             GuestEmail = "test@test.com",
             RoomNumber = roomNumber,
-            Start = start.Date.Ticks,
-            End = end.Date.Ticks
+            Start = start.Date,
+            End = end.Date
         });
     }
 
