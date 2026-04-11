@@ -1,5 +1,6 @@
 using System.Data;
 using Db;
+using Dapper;
 using Microsoft.Data.Sqlite;
 using Repositories;
 
@@ -12,11 +13,18 @@ var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.GetConnectionString("ReservationsDb")
         ?? "Data Source=reservations.db;Cache=Shared";
 
-    Services.AddSingleton(_ => new SqliteConnection(connectionString));
-    Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
-    Services.AddSingleton<GuestRepository>();
-    Services.AddSingleton<RoomRepository>();
-    Services.AddSingleton<ReservationRepository>();
+    Services.AddScoped<SqliteConnection>(_ =>
+    {
+        var connection = new SqliteConnection(connectionString);
+        connection.Open();
+        connection.Execute("PRAGMA foreign_keys = ON;");
+        connection.Execute("PRAGMA journal_mode = wal;");
+        return connection;
+    });
+    Services.AddScoped<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
+    Services.AddScoped<GuestRepository>();
+    Services.AddScoped<RoomRepository>();
+    Services.AddScoped<ReservationRepository>();
     Services.AddMvc(opt =>
     {
         opt.EnableEndpointRouting = false;

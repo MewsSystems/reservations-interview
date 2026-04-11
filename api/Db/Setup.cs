@@ -1,5 +1,5 @@
 using Dapper;
-using Microsoft.Data.Sqlite;
+using System.Data;
 using Models;
 
 namespace Db
@@ -11,12 +11,7 @@ namespace Db
         /// </summary>
         public static async Task EnsureDbAsync(IServiceScope scope)
         {
-            var db = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
-
-            // SQLite WAL (write-ahead log) go brrrr
-            await db.ExecuteAsync("PRAGMA journal_mode = wal;");
-            // SQLite does not enforce FKs by default
-            await db.ExecuteAsync("PRAGMA foreign_keys = ON;");
+            var db = scope.ServiceProvider.GetRequiredService<IDbConnection>();
 
             await db.ExecuteAsync(
                 $@"

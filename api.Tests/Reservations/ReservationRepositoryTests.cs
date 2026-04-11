@@ -182,6 +182,75 @@ public sealed class ReservationRepositoryTests
         );
     }
 
+    [Fact]
+    public async Task GetStaffReservations_ExcludesReservationsThatEndedBeforeToday()
+    {
+        await using var fixture = await TestDb.CreateAsync();
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(
+                email: "past@example.com",
+                start: new DateTime(2026, 4, 8, 0, 0, 0, DateTimeKind.Utc),
+                end: new DateTime(2026, 4, 10, 0, 0, 0, DateTimeKind.Utc)
+            )
+        );
+
+        var staffReservations = await fixture.ReservationRepository.GetStaffReservations(
+            new DateTime(2026, 4, 12, 0, 0, 0, DateTimeKind.Utc)
+        );
+
+        Assert.Empty(staffReservations);
+    }
+
+    [Fact]
+    public async Task GetStaffReservations_ReturnsTodayCurrentAndFutureReservationsWithGuestEmail()
+    {
+        await using var fixture = await TestDb.CreateAsync();
+        await fixture.Connection.ExecuteAsync(
+            "INSERT INTO Rooms(Number, State) VALUES(@Number, @State);",
+            new { Number = 102, State = 0 }
+        );
+        await fixture.Connection.ExecuteAsync(
+            "INSERT INTO Rooms(Number, State) VALUES(@Number, @State);",
+            new { Number = 103, State = 0 }
+        );
+
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(
+                roomNumber: "101",
+                email: "current@example.com",
+                start: new DateTime(2026, 4, 11, 0, 0, 0, DateTimeKind.Utc),
+                end: new DateTime(2026, 4, 12, 0, 0, 0, DateTimeKind.Utc)
+            )
+        );
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(
+                roomNumber: "102",
+                email: "today@example.com",
+                start: new DateTime(2026, 4, 12, 0, 0, 0, DateTimeKind.Utc),
+                end: new DateTime(2026, 4, 13, 0, 0, 0, DateTimeKind.Utc)
+            )
+        );
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(
+                roomNumber: "103",
+                email: "future@example.com",
+                start: new DateTime(2026, 4, 13, 0, 0, 0, DateTimeKind.Utc),
+                end: new DateTime(2026, 4, 14, 0, 0, 0, DateTimeKind.Utc)
+            )
+        );
+
+        var staffReservations = (
+            await fixture.ReservationRepository.GetStaffReservations(
+                new DateTime(2026, 4, 12, 0, 0, 0, DateTimeKind.Utc)
+            )
+        ).ToList();
+
+        Assert.Equal(3, staffReservations.Count);
+        Assert.Contains(staffReservations, reservation => reservation.GuestEmail == "current@example.com");
+        Assert.Contains(staffReservations, reservation => reservation.GuestEmail == "today@example.com");
+        Assert.Contains(staffReservations, reservation => reservation.GuestEmail == "future@example.com");
+    }
+
     private static Reservation TestReservation(
         string roomNumber = "101",
         string email = "guest@example.com",

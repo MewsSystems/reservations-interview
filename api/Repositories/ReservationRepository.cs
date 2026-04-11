@@ -27,6 +27,27 @@ namespace Repositories
             return reservations.Select(r => r.ToDomain());
         }
 
+        public async Task<IEnumerable<Reservation>> GetStaffReservations(DateTime fromDate)
+        {
+            var fromDateStart = fromDate.Date;
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                @"
+                SELECT *
+                FROM Reservations
+                WHERE End >= @fromDateStart
+                ORDER BY Start ASC, RoomNumber ASC;
+                ",
+                new { fromDateStart }
+            );
+
+            if (reservations == null)
+            {
+                return [];
+            }
+
+            return reservations.Select(r => r.ToDomain());
+        }
+
         /// <summary>
         /// Find a reservation by its Guid ID, throwing if not found
         /// </summary>
