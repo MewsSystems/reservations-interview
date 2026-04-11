@@ -1,4 +1,5 @@
 using Models.Errors;
+using System.Text.RegularExpressions;
 
 namespace Models
 {
@@ -31,13 +32,18 @@ namespace Models
 
         public static int ConvertRoomNumberToInt(string roomNumber)
         {
-            var success = int.TryParse(roomNumber, out int roomNumberInt);
-            if (!success)
+            if (!Regex.IsMatch(roomNumber, @"^\d{3}$"))
             {
-                throw new InvalidRoomNumber(roomNumber);
+                throw new InvalidRoomNumberException(roomNumber);
             }
 
-            return roomNumberInt;
+            var doorDigits = roomNumber[1..3];
+            if (doorDigits == "00")
+            {
+                throw new InvalidRoomNumberException(roomNumber);
+            }
+
+            return int.Parse(roomNumber);
         }
     }
 

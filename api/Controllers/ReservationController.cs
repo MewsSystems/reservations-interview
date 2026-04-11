@@ -56,14 +56,22 @@ namespace Controllers
             try
             {
                 var createdReservation = await _repo.CreateReservation(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
+                return Created($"/reservation/{createdReservation.Id}", createdReservation);
+            }
+            catch (ReservationValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidRoomNumberException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("An error occured when trying to book a reservation:");
                 Console.WriteLine(ex.ToString());
 
-                return BadRequest("Invalid reservation");
+                return StatusCode(500, "Failed to create reservation");
             }
         }
 

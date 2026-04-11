@@ -1,28 +1,32 @@
-_**delete this line. This is a pull request template, places delete or replace everything that is italicized.**_
+# Nikita Lebedenko
 
-_Replace the title with your full name, matching the first section below_
+This PR covers the three interview tasks and delivers the required reservation functionality across backend, tests,
+and a minimal frontend flow. It includes guest booking, reservation conflict validation, and staff access to view
+current and upcoming reservations.
 
-# _full name_
+## Task Status
 
-_replace this with a brief overview of the work and delivery_
-
-- RE#00_#_ _completed or polished?_
-- RE#00_#_ _completed or polished?_
-- RE#00_#_ _completed or polished?_
+RE-001: Completed - implemented guest booking flow
+RE-002: Completed - implemented reservation overlap validation
+RE-003: Completed - implemented staff access-code login and staff reservation list
 
 ## Task Report
 
-_give an indication where you spent your time and on which tasks, if your commit history is an accurate timelog you can talk about
-that, two examples are below._
+The commit history for this branch reflects the delivery order of the work:
 
-_The commit log is an accurate representation of my time spent from first commit, and it shows I did the MVP of RE#001,
-then RE#004, then RE#003, then committed the polish for RE#001, and then the polish of RE#003, and did
-some overall tidying after that. The commit log shows a time of 95 minutes and there was roughly 15 minutes of
-work prior to the first commit._
+- `0369309` RE-001 guest booking flow
+- `84ed5eb` RE-002 reservation overlap validation
+- `83a4a98` RE-003 staff reservation access flow
 
-_I took the full 120 minutes, with most of my time spent on #1 and #3._
+The first task took 1 hour and 40 minutes. The other two tasks together took 1 hour and 20 minutes.
+
+Most of the time was spent building the backend behavior and covering it with tests. The frontend
+was kept intentionally small and pragmatic so the main focus stayed on the backend interview tasks
+and API behavior.
 
 ## Notes
 
-_can leave blank, or add any further notes that don't fit in the above two sections_
-
+I tried to keep the implementation pragmatic and aligned with the existing structure, with the main focus on
+delivering the required behavior within the interview time limit. If I had more time, I would spend it on improving
+the backend architecture, tightening some of the API boundaries, and doing a bit more cleanup and refinement around
+the overall design.

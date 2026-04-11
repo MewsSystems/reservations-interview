@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { useShowSuccessToast } from "../utils/toasts";
+import { showInfoToast, useShowSuccessToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
+import { HTTPError } from "ky";
 
 const RESPONSIVE_GRID_COLS: React.ComponentProps<typeof Grid>["columns"] = {
   sm: "1",
@@ -24,8 +25,20 @@ export function ReservationPage() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+  async function onSubmit(booking: NewReservation) {
+    try {
+      await bookRoom(booking);
+      onClose();
+      showToast();
+    } catch (error) {
+      const message =
+        error instanceof HTTPError
+          ? (await error.response.text()) || "Booking failed."
+          : "Booking failed.";
+
+      showInfoToast(message);
+      throw error;
+    }
   }
 
   const createClickHandler = (roomNumber: string) => () => {
@@ -39,7 +52,14 @@ export function ReservationPage() {
       </Heading>
 
       <Grid columns={RESPONSIVE_GRID_COLS} gap="4" px="4" mt="8">
-        <Dialog.Root>
+        <Dialog.Root
+          open={Boolean(selectedRoomNumber)}
+          onOpenChange={(open) => {
+            if (!open) {
+              onClose();
+            }
+          }}
+        >
           {isLoading && <LoadingCard />}
           {rooms?.map((room) => (
             <ReservationCard
