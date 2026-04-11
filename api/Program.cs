@@ -32,7 +32,7 @@ var app = builder.Build();
 {
     try
     {
-        Setup.EnsureDb(app.Services.CreateScope());
+        await Setup.EnsureDbAsync(app.Services.CreateScope());
     }
     catch (Exception ex)
     {

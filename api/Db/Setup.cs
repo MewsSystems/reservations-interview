@@ -9,9 +9,9 @@ namespace Db
         /// <summary>
         /// Ensures the DB is available and the requried tables are made
         /// </summary>
-        public static async void EnsureDb(IServiceScope scope)
+        public static async Task EnsureDbAsync(IServiceScope scope)
         {
-            using var db = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
+            var db = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
 
             // SQLite WAL (write-ahead log) go brrrr
             await db.ExecuteAsync("PRAGMA journal_mode = wal;");

@@ -12,12 +12,12 @@ import styled from "styled-components";
 
 interface BookingDetailsModalProps {
   roomNumber: string;
-  onSubmit: (booking: NewReservation) => void;
+  onSubmit: (booking: NewReservation) => Promise<void>;
 }
 
 interface BookingFormProps {
   roomNumber: string;
-  onSubmit: (booking: NewReservation) => void;
+  onSubmit: (booking: NewReservation) => Promise<void>;
 }
 
 /** Must be inside a Dialog.Root that container Dialog.Triggers elsewhere */
@@ -55,24 +55,31 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
     null,
   ]);
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const showProcessingToast = useShowInfoToast("Processing booking...");
   const showNoInfoToast = useShowInfoToast("Missing email or dates.");
 
-  function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
+  async function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
     if (!email || !dateRange[0] || !dateRange[1]) {
       showNoInfoToast();
       evt.preventDefault();
       return false;
     }
 
+    setIsSubmitting(true);
     showProcessingToast();
-    onSubmit({
-      RoomNumber: roomNumber,
-      GuestEmail: email,
-      Start: fromDateStringToIso(dateRange[0]),
-      End: fromDateStringToIso(dateRange[1]),
-    });
-    return true;
+
+    try {
+      await onSubmit({
+        RoomNumber: roomNumber,
+        GuestEmail: email,
+        Start: fromDateStringToIso(dateRange[0]),
+        End: fromDateStringToIso(dateRange[1]),
+      });
+      return true;
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleDateChange(data: OnDatesChangeProps) {
@@ -121,11 +128,15 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         showResetDates={false}
       />
       <BottomRightBox>
-        <Dialog.Close>
-          <Button size="3" color="mint" mt="4" onClick={handleSubmit}>
-            Reserve
-          </Button>
-        </Dialog.Close>
+        <Button
+          size="3"
+          color="mint"
+          mt="4"
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+        >
+          Reserve
+        </Button>
       </BottomRightBox>
     </Box>
   );

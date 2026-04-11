@@ -1,4 +1,5 @@
 using System.Data;
+using System.Net.Mail;
 using Dapper;
 using Models;
 using Models.Errors;
@@ -49,10 +50,80 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            ValidateReservation(newReservation);
+
+            var roomNumberInt = Room.ConvertRoomNumberToInt(newReservation.RoomNumber);
+            var roomExists = await _db.QueryFirstOrDefaultAsync<int?>("SELECT Number FROM Rooms WHERE Number = @roomNumberInt;", new { roomNumberInt });
+
+            if (roomExists == null)
+                throw new ReservationValidationException($"Room {newReservation.RoomNumber} does not exist.");
+
+            var normalizedReservation = new Reservation
+            {
+                Id = newReservation.Id,
+                RoomNumber = newReservation.RoomNumber,
+                GuestEmail = newReservation.GuestEmail.Trim(),
+                Start = newReservation.Start,
+                End = newReservation.End,
+                CheckedIn = newReservation.CheckedIn,
+                CheckedOut = newReservation.CheckedOut
+            };
+
+            // TODO3HRS: better to have reservation service, not to call directly (not for 3 hrs)
+            await _db.ExecuteAsync(@"INSERT INTO Guests(Email, Name) VALUES(@Email, @Name) ON CONFLICT(Email) DO NOTHING;",
+                new
+                {
+                    Email = normalizedReservation.GuestEmail,
+                    Name = normalizedReservation.GuestEmail
+                }
             );
+
+            var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
+                @"
+                INSERT INTO Reservations(Id, GuestEmail, RoomNumber, Start, End, CheckedIn, CheckedOut)
+                VALUES(@Id, @GuestEmail, @RoomNumber, @Start, @End, @CheckedIn, @CheckedOut)
+                RETURNING *;
+                ",
+                new ReservationDb(normalizedReservation)
+            );
+
+            return createdReservation.ToDomain();
+        }
+
+        //TODO3HRS: extract to some validator (not for 3 hrs)
+        //TODODISCUSSION: Is not written in RE-001, but I would add backward validation.. 
+        private static void ValidateReservation(Reservation reservation)
+        {
+            if (reservation.Id == Guid.Empty)
+                throw new ReservationValidationException("Reservation ID is required.");
+
+            if (reservation.Start >= reservation.End)
+                throw new ReservationValidationException("Start date must be before end date.");
+
+            var duration = reservation.End - reservation.Start;
+            if (duration.TotalDays < 1)
+                throw new ReservationValidationException("Minimum stay is 1 day.");
+
+            if (duration.TotalDays > 30)
+                throw new ReservationValidationException("Maximum stay is 30 days.");
+
+            if (!IsEmail(reservation.GuestEmail))
+                throw new ReservationValidationException("Guest email must be valid.");
+        }
+
+        //TODO3HRS: its better tohave strict API boundary validation: DTO + data annotations like [EmailAddress] (not for 3 hrs)
+        private static bool IsEmail(string email)
+        {
+            try
+            {
+                var trimmedEmail = email.Trim();
+                var parsedEmail = new MailAddress(trimmedEmail);
+                return parsedEmail.Address == trimmedEmail && parsedEmail.Host.Contains('.');
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)
