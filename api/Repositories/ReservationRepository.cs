@@ -69,6 +69,28 @@ namespace Repositories
                 CheckedOut = newReservation.CheckedOut
             };
 
+            var hasConflict = await _db.QueryFirstOrDefaultAsync<int?>(
+                @"
+                SELECT 1
+                FROM Reservations
+                WHERE RoomNumber = @RoomNumber
+                  AND Start < @End
+                  AND @Start < End
+                LIMIT 1;
+                ",
+                new
+                {
+                    RoomNumber = roomNumberInt,
+                    normalizedReservation.Start,
+                    normalizedReservation.End
+                }
+            );
+
+            if (hasConflict != null)
+                throw new ReservationValidationException(
+                    $"Room {normalizedReservation.RoomNumber} is already reserved for the selected dates."
+                );
+
             // TODO3HRS: better to have reservation service, not to call directly (not for 3 hrs)
             await _db.ExecuteAsync(@"INSERT INTO Guests(Email, Name) VALUES(@Email, @Name) ON CONFLICT(Email) DO NOTHING;",
                 new

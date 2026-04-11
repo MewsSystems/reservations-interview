@@ -1,8 +1,8 @@
 namespace Models.Errors
 {
-    public class InvalidRoomNumber : Exception
+    public class InvalidRoomNumberException : Exception
     {
-        public InvalidRoomNumber(string invalidRoomNumber)
+        public InvalidRoomNumberException(string invalidRoomNumber)
             : base(
                 $"Room number '{invalidRoomNumber}' is invalid. Expected format is ### with a floor 0-9 and door 01-99."
             ) { }

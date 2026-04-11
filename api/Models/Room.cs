@@ -34,13 +34,13 @@ namespace Models
         {
             if (!Regex.IsMatch(roomNumber, @"^\d{3}$"))
             {
-                throw new InvalidRoomNumber(roomNumber);
+                throw new InvalidRoomNumberException(roomNumber);
             }
 
             var doorDigits = roomNumber[1..3];
             if (doorDigits == "00")
             {
-                throw new InvalidRoomNumber(roomNumber);
+                throw new InvalidRoomNumberException(roomNumber);
             }
 
             return int.Parse(roomNumber);

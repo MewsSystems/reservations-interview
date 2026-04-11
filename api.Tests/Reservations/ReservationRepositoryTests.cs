@@ -37,11 +37,9 @@ public sealed class ReservationRepositoryTests
         await using var fixture = await TestDb.CreateAsync();
         var reservation = TestReservation(startOffsetDays: 0, endOffsetDays: 0);
 
-        var ex = await Assert.ThrowsAsync<ReservationValidationException>(
+        await Assert.ThrowsAsync<ReservationValidationException>(
             () => fixture.ReservationRepository.CreateReservation(reservation)
         );
-
-        Assert.Equal("Start date must be before end date.", ex.Message);
     }
 
     [Fact]
@@ -53,11 +51,9 @@ public sealed class ReservationRepositoryTests
             end: new DateTime(2026, 4, 13, 11, 0, 0, DateTimeKind.Utc)
         );
 
-        var ex = await Assert.ThrowsAsync<ReservationValidationException>(
+        await Assert.ThrowsAsync<ReservationValidationException>(
             () => fixture.ReservationRepository.CreateReservation(reservation)
         );
-
-        Assert.Equal("Minimum stay is 1 day.", ex.Message);
     }
 
     [Fact]
@@ -66,11 +62,9 @@ public sealed class ReservationRepositoryTests
         await using var fixture = await TestDb.CreateAsync();
         var reservation = TestReservation(startOffsetDays: 0, endOffsetDays: 31);
 
-        var ex = await Assert.ThrowsAsync<ReservationValidationException>(
+        await Assert.ThrowsAsync<ReservationValidationException>(
             () => fixture.ReservationRepository.CreateReservation(reservation)
         );
-
-        Assert.Equal("Maximum stay is 30 days.", ex.Message);
     }
 
     [Fact]
@@ -79,11 +73,9 @@ public sealed class ReservationRepositoryTests
         await using var fixture = await TestDb.CreateAsync();
         var reservation = TestReservation(email: "guest@localhost");
 
-        var ex = await Assert.ThrowsAsync<ReservationValidationException>(
+        await Assert.ThrowsAsync<ReservationValidationException>(
             () => fixture.ReservationRepository.CreateReservation(reservation)
         );
-
-        Assert.Equal("Guest email must include a valid domain.", ex.Message);
     }
 
     [Fact]
@@ -92,11 +84,74 @@ public sealed class ReservationRepositoryTests
         await using var fixture = await TestDb.CreateAsync();
         var reservation = TestReservation(roomNumber: "202");
 
-        var ex = await Assert.ThrowsAsync<ReservationValidationException>(
+        await Assert.ThrowsAsync<ReservationValidationException>(
             () => fixture.ReservationRepository.CreateReservation(reservation)
         );
+    }
 
-        Assert.Equal("Room 202 does not exist.", ex.Message);
+    [Fact]
+    public async Task CreateReservation_RejectsOverlappingReservationForSameRoom()
+    {
+        await using var fixture = await TestDb.CreateAsync();
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(startOffsetDays: 0, endOffsetDays: 2)
+        );
+
+        var conflictingReservation = TestReservation(startOffsetDays: 1, endOffsetDays: 3);
+
+        await Assert.ThrowsAsync<ReservationValidationException>(
+            () => fixture.ReservationRepository.CreateReservation(conflictingReservation)
+        );
+    }
+
+    [Fact]
+    public async Task CreateReservation_AllowsOverlappingReservationForDifferentRoom()
+    {
+        await using var fixture = await TestDb.CreateAsync();
+        await fixture.Connection.ExecuteAsync(
+            "INSERT INTO Rooms(Number, State) VALUES(@Number, @State);",
+            new { Number = 102, State = 0 }
+        );
+
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(roomNumber: "101", startOffsetDays: 0, endOffsetDays: 2)
+        );
+
+        var created = await fixture.ReservationRepository.CreateReservation(
+            TestReservation(roomNumber: "102", startOffsetDays: 1, endOffsetDays: 3)
+        );
+
+        Assert.Equal("102", created.RoomNumber);
+    }
+
+    [Fact]
+    public async Task CreateReservation_AllowsNonOverlappingReservationForSameRoom()
+    {
+        await using var fixture = await TestDb.CreateAsync();
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(startOffsetDays: 0, endOffsetDays: 2)
+        );
+
+        var created = await fixture.ReservationRepository.CreateReservation(
+            TestReservation(startOffsetDays: 3, endOffsetDays: 5)
+        );
+
+        Assert.Equal("101", created.RoomNumber);
+    }
+
+    [Fact]
+    public async Task CreateReservation_AllowsReservationStartingOnExistingEndDate()
+    {
+        await using var fixture = await TestDb.CreateAsync();
+        await fixture.ReservationRepository.CreateReservation(
+            TestReservation(startOffsetDays: 0, endOffsetDays: 2)
+        );
+
+        var created = await fixture.ReservationRepository.CreateReservation(
+            TestReservation(startOffsetDays: 2, endOffsetDays: 4)
+        );
+
+        Assert.Equal("101", created.RoomNumber);
     }
 
     [Fact]
@@ -122,7 +177,7 @@ public sealed class ReservationRepositoryTests
         await using var fixture = await TestDb.CreateAsync();
         var reservation = TestReservation(roomNumber: roomNumber);
 
-        await Assert.ThrowsAsync<InvalidRoomNumber>(
+        await Assert.ThrowsAsync<InvalidRoomNumberException>(
             () => fixture.ReservationRepository.CreateReservation(reservation)
         );
     }

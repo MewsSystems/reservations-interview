@@ -62,7 +62,7 @@ namespace Controllers
             {
                 return BadRequest(ex.Message);
             }
-            catch (InvalidRoomNumber ex)
+            catch (InvalidRoomNumberException ex)
             {
                 return BadRequest(ex.Message);
             }
