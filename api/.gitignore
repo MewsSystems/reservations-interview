@@ -3,3 +3,5 @@ obj/
 reservations.db
 reservations.db-shm
 reservations.db-wal
+.DS_Store
+.vs

@@ -11,6 +11,9 @@ namespace Db
         /// </summary>
         public static async void EnsureDb(IServiceScope scope)
         {
+            // Register custom handlers
+            SqlMapper.AddTypeHandler(new GuidTypeHandler());
+
             using var db = scope.ServiceProvider.GetRequiredService<SqliteConnection>();
 
             // SQLite WAL (write-ahead log) go brrrr
@@ -22,7 +25,8 @@ namespace Db
                 $@"
               CREATE TABLE IF NOT EXISTS Guests (
                 {nameof(Guest.Email)} TEXT PRIMARY KEY NOT NULL,
-                {nameof(Guest.Name)} TEXT NOT NULL
+                {nameof(Guest.Name)} TEXT NOT NULL,
+                {nameof(Guest.Surname)} TEXT NULL
               );
             "
             );

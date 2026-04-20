@@ -5,24 +5,27 @@ import {
   FocusedInput,
   OnDatesChangeProps,
 } from "@datepicker-react/styled";
-import { Box, Button, Dialog, Separator, TextField } from "@radix-ui/themes";
-import { NewReservation } from "./api";
-import { useState } from "react";
+import { Box, Button, Dialog, Separator, Text, TextField } from "@radix-ui/themes";
+import { NewReservation, Reservation } from "./api";
+import { useState, useCallback } from "react";
 import styled from "styled-components";
 
 interface BookingDetailsModalProps {
   roomNumber: string;
+  reservations: Reservation[] | undefined;
   onSubmit: (booking: NewReservation) => void;
 }
 
 interface BookingFormProps {
   roomNumber: string;
+  reservations: Reservation[] | undefined;
   onSubmit: (booking: NewReservation) => void;
 }
 
 /** Must be inside a Dialog.Root that container Dialog.Triggers elsewhere */
 export function BookingDetailsModal({
   roomNumber,
+  reservations,
   onSubmit,
 }: BookingDetailsModalProps) {
   return (
@@ -32,7 +35,7 @@ export function BookingDetailsModal({
         Provide details for your reservation
       </Dialog.Description>
       <Separator color="cyan" size="4" my="4" />
-      <BookingForm roomNumber={roomNumber} onSubmit={onSubmit} />
+      <BookingForm roomNumber={roomNumber} reservations={reservations} onSubmit={onSubmit} />
     </Dialog.Content>
   );
 }
@@ -48,7 +51,7 @@ const BottomRightBox = styled(Box)`
   right: 0;
 `;
 
-function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
+function BookingForm({ roomNumber, reservations, onSubmit }: BookingFormProps) {
   const [email, setEmail] = useState("");
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
     null,
@@ -57,6 +60,15 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
   const showProcessingToast = useShowInfoToast("Processing booking...");
   const showNoInfoToast = useShowInfoToast("Missing email or dates.");
+  const isDateBlocked = useCallback((date: Date) => {
+    const toDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const day = toDay(date);
+    return (reservations ?? []).some(({ start: s, end: e }) => {
+      const start = toDay(new Date(s));
+      const end = toDay(new Date(e));
+      return day >= start && day < end;
+    });
+  }, [reservations]);
 
   function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
     if (!email || !dateRange[0] || !dateRange[1]) {
@@ -119,6 +131,7 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         focusedInput={focusedInput}
         onFocusChange={setFocusedInput}
         showResetDates={false}
+        isDateBlocked={isDateBlocked}
       />
       <BottomRightBox>
         <Dialog.Close>

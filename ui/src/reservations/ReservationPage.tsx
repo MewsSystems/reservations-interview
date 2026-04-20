@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { useShowSuccessToast } from "../utils/toasts";
+import { useShowSuccessToast, useShowErrorToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
-import { bookRoom, NewReservation, useGetRooms } from "./api";
+import { bookRoom, BookingError, NewReservation, useGetRoomReservations, useGetRooms } from "./api";
 import { LoadingCard } from "../components/LoadingCard";
 import { BookingDetailsModal } from "./BookingDetailsModal";
 
@@ -17,15 +17,27 @@ export function ReservationPage() {
   const [selectedRoomNumber, setSelectedRoomNumber] = useState("");
 
   const formattedRoomNumber = String(selectedRoomNumber).padStart(3, "0");
+  const { data: selectedRoomReservations } = useGetRoomReservations(selectedRoomNumber);
 
-  const showToast = useShowSuccessToast("We have received your booking!");
+  const showSuccessToast = useShowSuccessToast("We have received your booking!");
+  const showErrorToast = useShowErrorToast();
 
   function onClose() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+  async function onSubmit(booking: NewReservation) {
+    try {
+      await bookRoom(booking);
+      onClose();
+      showSuccessToast();
+    } catch (error) {
+      if (error instanceof BookingError) {
+        error.messages.forEach((msg) => showErrorToast(msg));
+      } else {
+        showErrorToast("Something went wrong, please try again.");
+      }
+    }
   }
 
   const createClickHandler = (roomNumber: string) => () => {
@@ -52,6 +64,7 @@ export function ReservationPage() {
 
           <BookingDetailsModal
             roomNumber={formattedRoomNumber}
+            reservations={selectedRoomReservations}
             onSubmit={onSubmit}
           />
         </Dialog.Root>

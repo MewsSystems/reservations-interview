@@ -1,7 +1,10 @@
 using System.Data;
+using api.Models.Validators;
 using Db;
+using FluentValidation;
 using Microsoft.Data.Sqlite;
 using Repositories;
+using SharpGrip.FluentValidation.AutoValidation.Mvc.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,15 +15,40 @@ var builder = WebApplication.CreateBuilder(args);
         builder.Configuration.GetConnectionString("ReservationsDb")
         ?? "Data Source=reservations.db;Cache=Shared";
 
-    Services.AddSingleton(_ => new SqliteConnection(connectionString));
-    Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
-    Services.AddSingleton<GuestRepository>();
-    Services.AddSingleton<RoomRepository>();
-    Services.AddSingleton<ReservationRepository>();
+    Services.AddScoped(_ => new SqliteConnection(connectionString));
+    Services.AddScoped<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
+    Services.AddScoped<GuestRepository>();
+    Services.AddScoped<RoomRepository>();
+    Services.AddScoped<ReservationRepository>();
     Services.AddMvc(opt =>
     {
         opt.EnableEndpointRouting = false;
     });
+    Services
+        .AddFluentValidationAutoValidation()
+        .AddValidatorsFromAssemblyContaining<ReservationValidator>();
+
+    Services.AddAuthentication("StaffCookies")
+        .AddCookie("StaffCookies", options =>
+        {
+            options.Cookie.Name = "access";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.IsEssential = true;
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.StatusCode = 401;
+                return Task.CompletedTask;
+            };
+            options.Events.OnRedirectToAccessDenied = context =>
+            {
+                context.Response.StatusCode = 403;
+                return Task.CompletedTask;
+            };
+        });
+    Services.AddAuthorization();
+
     Services.AddCors();
     Services.AddEndpointsApiExplorer();
     Services.AddSwaggerGen();
@@ -43,8 +71,10 @@ var app = builder.Build();
     }
 
     app.UsePathBase("/api")
-        .UseMvc()
         .UseCors(p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader())
+        .UseAuthentication()
+        .UseAuthorization()
+        .UseMvc()
         .UseSwagger()
         .UseSwaggerUI();
 }

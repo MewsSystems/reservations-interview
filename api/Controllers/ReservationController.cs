@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
@@ -9,14 +10,16 @@ namespace Controllers
     public class ReservationController : Controller
     {
         private ReservationRepository _repo { get; set; }
+        private ILogger<ReservationController> Logger { get; set; }
 
-        public ReservationController(ReservationRepository reservationRepository)
+        public ReservationController(ReservationRepository reservationRepository, ILogger<ReservationController> logger)
         {
             _repo = reservationRepository;
+            Logger = logger;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
-        public async Task<ActionResult<Reservation>> GetReservations()
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetReservations()
         {
             var reservations = await _repo.GetReservations();
 
@@ -35,6 +38,21 @@ namespace Controllers
             {
                 return NotFound();
             }
+        }
+
+        [HttpGet, Produces("application/json"), Route("room/{roomNumber}")]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetRoomReservations(string roomNumber)
+        {
+            var reservations = await _repo.GetRoomReservations(roomNumber);
+
+            return Json(reservations);
+        }
+
+        [HttpGet, Produces("application/json"), Route("upcoming"), Authorize]
+        public async Task<ActionResult<IEnumerable<Reservation>>> GetUpcomingReservations()
+        {
+            var reservations = await _repo.GetUpcomingReservations();
+            return Json(reservations);
         }
 
         /// <summary>
@@ -56,13 +74,16 @@ namespace Controllers
             try
             {
                 var createdReservation = await _repo.CreateReservation(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
+                return Created($"/reservation/{createdReservation.Id}", createdReservation);
+            }
+            catch (ReservationConflictException ex)
+            {
+                Logger.LogWarning(ex, "A reservation conflict occurred when trying to book a reservation");
+                return Conflict("Invalid reservation, dates collide with another booking");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("An error occured when trying to book a reservation:");
-                Console.WriteLine(ex.ToString());
-
+                Logger.LogError(ex, "An error occurred when trying to book a reservation");
                 return BadRequest("Invalid reservation");
             }
         }

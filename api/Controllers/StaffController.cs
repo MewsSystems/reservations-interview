@@ -1,4 +1,7 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace Controllers
 {
@@ -6,63 +9,33 @@ namespace Controllers
     public class StaffController : Controller
     {
         private IConfiguration Config { get; set; }
+        private ILogger<StaffController> Logger { get; set; }
 
-        public StaffController(IConfiguration config)
+        public StaffController(IConfiguration config, ILogger<StaffController> logger)
         {
             Config = config;
+            Logger = logger;
         }
 
-        /// <summary>
-        /// Checks if the request is from a staff member, if not returns true and a 403 result
-        /// </summary>
-        /// <param name="request"></param>
-        private bool IsNotStaff(HttpRequest request, out IActionResult? result)
-        {
-            // TODO explore UseAuthentication
-            request.Cookies.TryGetValue("access", out string? accessValue);
-
-            if (accessValue == null || accessValue == "0")
-            {
-                result = StatusCode(403);
-                return true;
-            }
-
-            result = null;
-            return false;
-        }
-
-        [HttpGet, Route("login")]
-        public IActionResult CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
+        [HttpPost, Route("login")]
+        public async Task<IActionResult> CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
         {
             var configuredSecret = Config.GetValue<string>("staffAccessCode");
             if (configuredSecret != accessCode)
             {
-                // don't set cookie, don't indicate anything
-                return NoContent();
+                Logger.LogWarning("Unauthorised access attempt");
+                return Unauthorized();
             }
-            Response.Cookies.Append(
-                "access",
-                "1",
-                new CookieOptions
-                // TODO evaluate cookie options & auth mechanism for best security practices
-                {
-                    IsEssential = true,
-                    SameSite = SameSiteMode.Strict,
-                    HttpOnly = true,
-                    Secure = true
-                }
-            );
+
+            var claimsIdentity = new ClaimsIdentity("StaffCookies");
+            await HttpContext.SignInAsync("StaffCookies", new ClaimsPrincipal(claimsIdentity));
+
             return NoContent();
         }
 
-        [HttpGet, Route("check")]
+        [HttpGet, Route("check"), Authorize]
         public IActionResult CheckCookie()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
-            {
-                return result!;
-            }
-
             return Ok("Authorized");
         }
     }
