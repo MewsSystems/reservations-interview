@@ -6,6 +6,7 @@ using Repositories.Interfaces;
 namespace Controllers
 {
     [Tags("Rooms"), Route("room")]
+    [ApiController]
     public class RoomController : Controller
     {
         private IRoomRepository _repo { get; set; }

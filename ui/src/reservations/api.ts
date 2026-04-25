@@ -18,7 +18,34 @@ const ReservationSchema = z.object({
   End: z.string().nullable(),
 });
 
+const StaffReservationSchema = z.object({
+  Id: z.string(),
+  RoomNumber: z.string(),
+  GuestEmail: z.string().email(),
+  Start: z.string(),
+  End: z.string(),
+  CheckedIn: z.boolean(),
+  CheckedOut: z.boolean(),
+});
+
 type Reservation = z.infer<typeof ReservationSchema>;
+const StaffReservationListSchema = StaffReservationSchema.array();
+
+export async function staffLogin(code: string) {
+  return ky.get("api/staff/login", {
+    headers: { "X-Staff-Code": code }
+  });
+}
+
+export function useGetStaffReservations() {
+  return useQuery({
+    queryKey: ["staff-reservations"],
+    queryFn: () => 
+      ky.get("api/staff/reservations")
+        .json()
+        .then(StaffReservationListSchema.parseAsync),
+  });
+}
 
 export function bookRoom(booking: NewReservation) {
   // unwrap branded types
@@ -32,8 +59,8 @@ export function bookRoom(booking: NewReservation) {
 }
 
 const RoomSchema = z.object({
-  number: z.string(),
-  state: z.number(),
+  Number: z.string(),
+  State: z.number(),
 });
 
 function toDateStr(date: Date | string): string {

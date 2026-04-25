@@ -6,6 +6,7 @@ using Repositories.Interfaces;
 namespace Controllers
 {
     [Tags("Guests"), Route("guest")]
+    [ApiController]
     public class GuestController : Controller
     {
         private IGuestRepository _repo;

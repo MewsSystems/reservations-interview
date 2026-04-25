@@ -9,5 +9,6 @@ namespace Repositories.Interfaces
         Task<Reservation> CreateReservation(Reservation newReservation);
         Task<bool> HasConflict(Reservation reservation);
         Task<bool> DeleteReservation(Guid reservationId);
+        Task<IEnumerable<Reservation>> GetUpcomingReservations();
     }
 }

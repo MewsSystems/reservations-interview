@@ -101,6 +101,12 @@ namespace Repositories
             return deleted > 0;
         }
 
+        public async Task<IEnumerable<Reservation>> GetUpcomingReservations()
+        {
+            var sql = "SELECT * FROM Reservations WHERE End >= date('now') ORDER BY Start ASC";
+            return await _db.QueryAsync<Reservation>(sql);
+        }
+
         private class ReservationDb
         {
             public string Id { get; set; }
