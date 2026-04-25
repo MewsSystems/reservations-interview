@@ -1,16 +1,16 @@
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
-using Repositories;
+using Repositories.Interfaces;
 
 namespace Controllers
 {
     [Tags("Rooms"), Route("room")]
     public class RoomController : Controller
     {
-        private RoomRepository _repo { get; set; }
+        private IRoomRepository _repo { get; set; }
 
-        public RoomController(RoomRepository roomRepository)
+        public RoomController(IRoomRepository roomRepository)
         {
             _repo = roomRepository;
         }

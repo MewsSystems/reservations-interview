@@ -1,10 +1,7 @@
-using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
-using Repositories;
 using Repositories.Interfaces;
-using Validators;
 using Validators.Interfaces;
 
 namespace Controllers
@@ -17,15 +14,6 @@ namespace Controllers
         private readonly IRoomRepository _roomRepo;
         private readonly IGuestRepository _guestRepo;
         private readonly IReservationValidator _reservationValidator;
-
-        private static readonly Regex EmailRegex = new Regex(
-            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
-            RegexOptions.Compiled
-        );
-        private static readonly Regex RoomNumberRegex = new Regex(
-            @"^[0-9](0[1-9]|[1-9][0-9])$",
-            RegexOptions.Compiled
-        );
         private static readonly string[] error = new[] { "Request payload is missing or invalid." };
 
         public ReservationController(
