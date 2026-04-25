@@ -2,10 +2,11 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Repositories.Interfaces;
 
 namespace Repositories
 {
-    public class RoomRepository
+    public class RoomRepository : IRoomRepository
     {
         private IDbConnection _db { get; set; }
 

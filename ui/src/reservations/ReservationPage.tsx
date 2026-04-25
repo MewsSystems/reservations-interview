@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useShowSuccessToast } from "../utils/toasts";
+import { useShowErrorToast, useShowSuccessToast } from "../utils/toasts";
 import { Grid, Heading, Section, Dialog } from "@radix-ui/themes";
 import { ReservationCard } from "./ReservationCard";
 import { bookRoom, NewReservation, useGetRooms } from "./api";
@@ -20,13 +20,36 @@ export function ReservationPage() {
 
   const showToast = useShowSuccessToast("We have received your booking!");
 
+  const showErrorToast = useShowErrorToast();
+
   function onClose() {
     setSelectedRoomNumber("");
   }
 
-  function onSubmit(booking: NewReservation) {
-    bookRoom(booking).then(onClose).then(showToast);
+async function onSubmit(booking: NewReservation) {
+  try {
+    await bookRoom(booking);
+    onClose();
+    showToast();
+  } catch (err: any) {
+    let errorMessage = "An unexpected error occurred.";
+
+    if (err.name === "HTTPError") {
+      try {
+        const data = await err.response.json();
+        const errors = Array.isArray(data.errors) 
+          ? data.errors 
+          : Object.values(data.errors || {}).flat();
+        
+        errorMessage = errors.length > 0 ? errors.join("\n") : "Room may be unavailable.";
+      } catch {
+        errorMessage = (await err.response.text()) || "Unknown error.";
+      }
+    }
+
+    showErrorToast(`Booking failed: ${errorMessage}`);
   }
+}
 
   const createClickHandler = (roomNumber: string) => () => {
     setSelectedRoomNumber(roomNumber);
@@ -43,10 +66,10 @@ export function ReservationPage() {
           {isLoading && <LoadingCard />}
           {rooms?.map((room) => (
             <ReservationCard
-              key={room.number}
+              key={room.Number}
               imgSrc="/bed.png"
-              roomNumber={room.number}
-              onClick={createClickHandler(room.number)}
+              roomNumber={room.Number}
+              onClick={createClickHandler(room.Number)}
             />
           ))}
 

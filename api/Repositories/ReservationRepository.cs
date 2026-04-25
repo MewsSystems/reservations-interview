@@ -2,10 +2,11 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Repositories.Interfaces;
 
 namespace Repositories
 {
-    public class ReservationRepository
+    public class ReservationRepository : IReservationRepository
     {
         private IDbConnection _db { get; set; }
 
@@ -49,10 +50,45 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            // Check for overlapping reservations
+            var hasConflict = await HasConflict(newReservation);
+            if (hasConflict)
+            {
+                throw new InvalidOperationException("Room is already booked for these dates");
+            }
+
+            var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
+                @"INSERT INTO Reservations(Id, RoomNumber, GuestEmail, Start, End, CheckedIn, CheckedOut) 
+                  Values(@Id, @RoomNumber, @GuestEmail, @Start, @End, @CheckedIn, @CheckedOut) 
+                  RETURNING *",
+                new ReservationDb(newReservation)
             );
+
+            return createdReservation.ToDomain();
+        }
+
+        /// <summary>
+        /// Check if a reservation conflicts with existing reservations for the same room
+        /// </summary>
+        public async Task<bool> HasConflict(Reservation reservation)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(reservation.RoomNumber);
+
+            // Overlap formula: (newStart < existingEnd) AND (newEnd > existingStart)
+            var existingReservations = await _db.QueryAsync<ReservationDb>(
+                @"SELECT * FROM Reservations 
+                  WHERE RoomNumber = @roomNumberInt 
+                  AND Start < @endDate 
+                  AND End > @startDate",
+                new
+                {
+                    roomNumberInt,
+                    startDate = reservation.Start,
+                    endDate = reservation.End,
+                }
+            );
+
+            return existingReservations.Any();
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)
@@ -63,6 +99,50 @@ namespace Repositories
             );
 
             return deleted > 0;
+        }
+
+        public async Task<IEnumerable<Reservation>> GetUpcomingReservations()
+        {
+            var sql = "SELECT * FROM Reservations WHERE End >= date('now') ORDER BY Start ASC";
+            return await _db.QueryAsync<Reservation>(sql);
+        }
+
+        public async Task<bool> ExecuteCheckInTransaction(Guid reservationId, string roomNumber)
+        {
+            var connection = _db;
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var idStr = reservationId.ToString();
+
+                var checkInSql = "UPDATE Reservations SET CheckedIn = 1 WHERE Id = @id";
+                var affectedRows = await connection.ExecuteAsync(
+                    checkInSql,
+                    new { id = idStr },
+                    transaction
+                );
+
+                if (affectedRows == 0)
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+
+                var roomSql = "UPDATE Rooms SET State = 2 WHERE Number = @roomNumber";
+                await connection.ExecuteAsync(roomSql, new { roomNumber }, transaction);
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database Error: {ex.Message}");
+                transaction.Rollback();
+                return false;
+            }
         }
 
         private class ReservationDb
@@ -105,7 +185,7 @@ namespace Repositories
                     Start = Start,
                     End = End,
                     CheckedIn = CheckedIn,
-                    CheckedOut = CheckedOut
+                    CheckedOut = CheckedOut,
                 };
             }
         }

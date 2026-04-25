@@ -1,69 +1,82 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Repositories.Interfaces;
+using Services;
 
 namespace Controllers
 {
-    [Route("staff")]
+    [ApiController, Route("staff")]
     public class StaffController : Controller
     {
         private IConfiguration Config { get; set; }
+        private readonly IReservationRepository _reservationRepo;
+        private readonly ICheckInService _checkInService;
 
-        public StaffController(IConfiguration config)
+        public StaffController(
+            IConfiguration config,
+            IReservationRepository reservationRepo,
+            ICheckInService checkInService
+        )
         {
             Config = config;
-        }
-
-        /// <summary>
-        /// Checks if the request is from a staff member, if not returns true and a 403 result
-        /// </summary>
-        /// <param name="request"></param>
-        private bool IsNotStaff(HttpRequest request, out IActionResult? result)
-        {
-            // TODO explore UseAuthentication
-            request.Cookies.TryGetValue("access", out string? accessValue);
-
-            if (accessValue == null || accessValue == "0")
-            {
-                result = StatusCode(403);
-                return true;
-            }
-
-            result = null;
-            return false;
+            _reservationRepo = reservationRepo;
+            _checkInService = checkInService;
         }
 
         [HttpGet, Route("login")]
-        public IActionResult CheckCode([FromHeader(Name = "X-Staff-Code")] string accessCode)
+        public async Task<IActionResult> CheckCode(
+            [FromHeader(Name = "X-Staff-Code")] string accessCode
+        )
         {
+            Response.Cookies.Delete("access");
+            await HttpContext.SignOutAsync("StaffAuth");
+
             var configuredSecret = Config.GetValue<string>("staffAccessCode");
-            if (configuredSecret != accessCode)
+            if (string.IsNullOrEmpty(configuredSecret) || configuredSecret != accessCode)
             {
-                // don't set cookie, don't indicate anything
-                return NoContent();
+                return Unauthorized("Invalid access code.");
             }
-            Response.Cookies.Append(
-                "access",
-                "1",
-                new CookieOptions
-                // TODO evaluate cookie options & auth mechanism for best security practices
-                {
-                    IsEssential = true,
-                    SameSite = SameSiteMode.Strict,
-                    HttpOnly = true,
-                    Secure = true
-                }
-            );
-            return NoContent();
+
+            var claims = new List<Claim> { new Claim(ClaimTypes.Role, "Staff") };
+            var identity = new ClaimsIdentity(claims, "StaffAuth");
+            var principal = new ClaimsPrincipal(identity);
+
+            await HttpContext.SignInAsync("StaffAuth", principal);
+
+            return Ok("Authenticated");
         }
 
+        [Authorize(AuthenticationSchemes = "StaffAuth")]
         [HttpGet, Route("check")]
         public IActionResult CheckCookie()
         {
-            if (IsNotStaff(Request, out IActionResult? result))
-            {
-                return result!;
-            }
-
             return Ok("Authorized");
+        }
+
+        [Authorize(AuthenticationSchemes = "StaffAuth")]
+        [HttpGet, Route("reservations")]
+        public async Task<IActionResult> GetStaffReservations()
+        {
+            var reservations = await _reservationRepo.GetUpcomingReservations();
+            return Ok(reservations);
+        }
+
+        [Authorize(AuthenticationSchemes = "StaffAuth")]
+        [HttpPost, Route("checkin/{id}")]
+        public async Task<IActionResult> CheckIn(Guid id, [FromBody] string emailConfirmation)
+        {
+            var (success, error) = await _checkInService.ProcessCheckIn(id, emailConfirmation);
+
+            if (success)
+                return Ok();
+
+            return error switch
+            {
+                "Reservation not found." => NotFound(),
+                _ => BadRequest(error),
+            };
         }
     }
 }

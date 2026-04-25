@@ -1,15 +1,17 @@
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Repositories;
+using Repositories.Interfaces;
 
 namespace Controllers
 {
     [Tags("Guests"), Route("guest")]
+    [ApiController]
     public class GuestController : Controller
     {
-        private GuestRepository _repo;
+        private IGuestRepository _repo;
 
-        public GuestController(GuestRepository guestRepository)
+        public GuestController(IGuestRepository guestRepository)
         {
             _repo = guestRepository;
         }
