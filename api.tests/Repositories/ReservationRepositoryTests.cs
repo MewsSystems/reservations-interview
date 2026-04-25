@@ -18,7 +18,6 @@ namespace api.tests.Repositories
             _db.Open();
 
             // Initialize the schema (Tables: Guests, Rooms, Reservations)
-            // You can use your existing Setup.cs logic or a simplified script
             InitializeSchema();
 
             _repo = new ReservationRepository(_db);
