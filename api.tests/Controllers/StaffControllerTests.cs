@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Models;
 using Moq;
 using Repositories.Interfaces;
+using Services;
 using Xunit;
 
 namespace api.tests.Controllers
@@ -15,14 +16,17 @@ namespace api.tests.Controllers
     {
         private readonly Mock<IConfiguration> _configMock;
         private readonly Mock<IReservationRepository> _repoMock;
+        private readonly Mock<ICheckInService> _checkInServiceMock;
         private readonly StaffController _controller;
 
         public StaffControllerTests()
         {
             _configMock = new Mock<IConfiguration>();
             _repoMock = new Mock<IReservationRepository>();
+            _checkInServiceMock = new Mock<ICheckInService>();
 
-            _controller = new StaffController(_configMock.Object, _repoMock.Object);
+            _controller = new StaffController(
+                _configMock.Object, _repoMock.Object, checkInService: _checkInServiceMock.Object);
 
             // Mocking HttpContext for Authentication methods
             var httpContext = new DefaultHttpContext();
@@ -76,6 +80,38 @@ namespace api.tests.Controllers
             );
             Assert.Single(returnedReservations);
             Assert.Contains(returnedReservations, r => r.GuestEmail == "staff_view@test.com");
+        }
+
+        [Fact]
+        public async Task CheckIn_ServiceReturnsSuccess_ReturnsOk()
+        {
+            // Arrange
+            var resId = Guid.NewGuid();
+            _checkInServiceMock
+                .Setup(s => s.ProcessCheckIn(resId, "test@test.com"))
+                .ReturnsAsync((true, string.Empty));
+
+            // Act
+            var result = await _controller.CheckIn(resId, "test@test.com");
+
+            // Assert
+            Assert.IsType<OkResult>(result);
+        }
+
+        [Fact]
+        public async Task CheckIn_ServiceReturnsNotFoundError_ReturnsNotFound()
+        {
+            // Arrange
+            var resId = Guid.NewGuid();
+            _checkInServiceMock
+                .Setup(s => s.ProcessCheckIn(resId, "test@test.com"))
+                .ReturnsAsync((false, "Reservation not found."));
+
+            // Act
+            var result = await _controller.CheckIn(resId, "test@test.com");
+
+            // Assert
+            Assert.IsType<NotFoundResult>(result);
         }
     }
 }

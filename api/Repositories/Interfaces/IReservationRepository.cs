@@ -10,5 +10,6 @@ namespace Repositories.Interfaces
         Task<bool> HasConflict(Reservation reservation);
         Task<bool> DeleteReservation(Guid reservationId);
         Task<IEnumerable<Reservation>> GetUpcomingReservations();
+        Task<bool> ExecuteCheckInTransaction(Guid reservationId, string roomNumber);
     }
 }

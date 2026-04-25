@@ -66,10 +66,10 @@ async function onSubmit(booking: NewReservation) {
           {isLoading && <LoadingCard />}
           {rooms?.map((room) => (
             <ReservationCard
-              key={room.number}
+              key={room.Number}
               imgSrc="/bed.png"
-              roomNumber={room.number}
-              onClick={createClickHandler(room.number)}
+              roomNumber={room.Number}
+              onClick={createClickHandler(room.Number)}
             />
           ))}
 

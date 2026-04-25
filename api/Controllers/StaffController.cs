@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Repositories.Interfaces;
+using Services;
 
 namespace Controllers
 {
@@ -11,11 +12,17 @@ namespace Controllers
     {
         private IConfiguration Config { get; set; }
         private readonly IReservationRepository _reservationRepo;
+        private readonly ICheckInService _checkInService;
 
-        public StaffController(IConfiguration config, IReservationRepository reservationRepo)
+        public StaffController(
+            IConfiguration config,
+            IReservationRepository reservationRepo,
+            ICheckInService checkInService
+        )
         {
             Config = config;
             _reservationRepo = reservationRepo;
+            _checkInService = checkInService;
         }
 
         [HttpGet, Route("login")]
@@ -52,9 +59,24 @@ namespace Controllers
         [HttpGet, Route("reservations")]
         public async Task<IActionResult> GetStaffReservations()
         {
-            // Requirement: Today and future reservations
             var reservations = await _reservationRepo.GetUpcomingReservations();
             return Ok(reservations);
+        }
+
+        [Authorize(AuthenticationSchemes = "StaffAuth")]
+        [HttpPost, Route("checkin/{id}")]
+        public async Task<IActionResult> CheckIn(Guid id, [FromBody] string emailConfirmation)
+        {
+            var (success, error) = await _checkInService.ProcessCheckIn(id, emailConfirmation);
+
+            if (success)
+                return Ok();
+
+            return error switch
+            {
+                "Reservation not found." => NotFound(),
+                _ => BadRequest(error),
+            };
         }
     }
 }

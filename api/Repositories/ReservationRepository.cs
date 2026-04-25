@@ -107,6 +107,44 @@ namespace Repositories
             return await _db.QueryAsync<Reservation>(sql);
         }
 
+        public async Task<bool> ExecuteCheckInTransaction(Guid reservationId, string roomNumber)
+        {
+            var connection = _db;
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            using var transaction = connection.BeginTransaction();
+            try
+            {
+                var idStr = reservationId.ToString();
+
+                var checkInSql = "UPDATE Reservations SET CheckedIn = 1 WHERE Id = @id";
+                var affectedRows = await connection.ExecuteAsync(
+                    checkInSql,
+                    new { id = idStr },
+                    transaction
+                );
+
+                if (affectedRows == 0)
+                {
+                    transaction.Rollback();
+                    return false;
+                }
+
+                var roomSql = "UPDATE Rooms SET State = 2 WHERE Number = @roomNumber";
+                await connection.ExecuteAsync(roomSql, new { roomNumber }, transaction);
+
+                transaction.Commit();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Database Error: {ex.Message}");
+                transaction.Rollback();
+                return false;
+            }
+        }
+
         private class ReservationDb
         {
             public string Id { get; set; }

@@ -58,6 +58,10 @@ export function bookRoom(booking: NewReservation) {
  return ky.post("api/reservation", { json: newReservation }).json<Reservation>();
 }
 
+export async function checkInGuest(id: string, email: string) {
+  return ky.post(`api/staff/checkin/${id}`, { json: email }).json();
+}
+
 const RoomSchema = z.object({
   Number: z.string(),
   State: z.number(),

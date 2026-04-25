@@ -5,6 +5,7 @@ using Helpers;
 using Microsoft.Data.Sqlite;
 using Repositories;
 using Repositories.Interfaces;
+using Services;
 using Validators;
 using Validators.Interfaces;
 
@@ -17,12 +18,14 @@ var builder = WebApplication.CreateBuilder(args);
         ?? "Data Source=reservations.db;Cache=Shared";
 
     SqlMapper.AddTypeHandler(new GuidTypeHandler());
+    SqlMapper.AddTypeHandler(new SqliteBooleanHandler());
 
     Services.AddSingleton(_ => new SqliteConnection(connectionString));
     Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
     Services.AddScoped<IReservationRepository, ReservationRepository>();
     Services.AddScoped<IRoomRepository, RoomRepository>();
     Services.AddScoped<IGuestRepository, GuestRepository>();
+    builder.Services.AddScoped<ICheckInService, CheckInService>();
     Services.AddSingleton<IReservationValidator, ReservationValidator>();
     Services
         .AddMvc(opt =>
