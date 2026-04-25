@@ -2,10 +2,11 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Repositories.Interfaces;
 
 namespace Repositories
 {
-    public class ReservationRepository
+    public class ReservationRepository : IReservationRepository
     {
         private IDbConnection _db { get; set; }
 
@@ -49,10 +50,45 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            // Check for overlapping reservations
+            var hasConflict = await HasConflict(newReservation);
+            if (hasConflict)
+            {
+                throw new InvalidOperationException("Room is already booked for these dates");
+            }
+
+            var createdReservation = await _db.QuerySingleAsync<ReservationDb>(
+                @"INSERT INTO Reservations(Id, RoomNumber, GuestEmail, Start, End, CheckedIn, CheckedOut) 
+                  Values(@Id, @RoomNumber, @GuestEmail, @Start, @End, @CheckedIn, @CheckedOut) 
+                  RETURNING *",
+                new ReservationDb(newReservation)
             );
+
+            return createdReservation.ToDomain();
+        }
+
+        /// <summary>
+        /// Check if a reservation conflicts with existing reservations for the same room
+        /// </summary>
+        public async Task<bool> HasConflict(Reservation reservation)
+        {
+            var roomNumberInt = Room.ConvertRoomNumberToInt(reservation.RoomNumber);
+
+            // Overlap formula: (newStart < existingEnd) AND (newEnd > existingStart)
+            var existingReservations = await _db.QueryAsync<ReservationDb>(
+                @"SELECT * FROM Reservations 
+                  WHERE RoomNumber = @roomNumberInt 
+                  AND Start < @endDate 
+                  AND End > @startDate",
+                new
+                {
+                    roomNumberInt,
+                    startDate = reservation.Start,
+                    endDate = reservation.End,
+                }
+            );
+
+            return existingReservations.Any();
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)
@@ -105,7 +141,7 @@ namespace Repositories
                     Start = Start,
                     End = End,
                     CheckedIn = CheckedIn,
-                    CheckedOut = CheckedOut
+                    CheckedOut = CheckedOut,
                 };
             }
         }

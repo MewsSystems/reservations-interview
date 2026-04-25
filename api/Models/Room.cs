@@ -45,6 +45,6 @@ namespace Models
     {
         Ready = 0,
         Occupied = 1,
-        Dirty = 2
+        Dirty = 2,
     }
 }

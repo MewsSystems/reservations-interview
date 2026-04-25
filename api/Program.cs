@@ -2,9 +2,11 @@ using System.Data;
 using Db;
 using Microsoft.Data.Sqlite;
 using Repositories;
+using Repositories.Interfaces;
+using Validators;
+using Validators.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
-
 
 {
     var Services = builder.Services;
@@ -14,9 +16,10 @@ var builder = WebApplication.CreateBuilder(args);
 
     Services.AddSingleton(_ => new SqliteConnection(connectionString));
     Services.AddSingleton<IDbConnection>(sp => sp.GetRequiredService<SqliteConnection>());
-    Services.AddSingleton<GuestRepository>();
-    Services.AddSingleton<RoomRepository>();
-    Services.AddSingleton<ReservationRepository>();
+    Services.AddScoped<IReservationRepository, ReservationRepository>();
+    Services.AddScoped<IRoomRepository, RoomRepository>();
+    Services.AddScoped<IGuestRepository, GuestRepository>();
+    Services.AddSingleton<IReservationValidator, ReservationValidator>();
     Services.AddMvc(opt =>
     {
         opt.EnableEndpointRouting = false;
@@ -27,7 +30,6 @@ var builder = WebApplication.CreateBuilder(args);
 }
 
 var app = builder.Build();
-
 
 {
     try

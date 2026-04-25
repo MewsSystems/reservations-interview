@@ -1,1 +1,10 @@
 .DS_Store
+# Build results
+[Bb]in/
+[Oo]bj/
+
+# DLLs and Executables
+*.dll
+*.exe
+*.pdb
+*.user

@@ -1,5 +1,4 @@
 import { useShowInfoToast } from "../utils/toasts";
-import { fromDateStringToIso } from "../utils/datetime";
 import {
   DateRangeInput,
   FocusedInput,
@@ -55,23 +54,36 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
     null,
   ]);
   const [focusedInput, setFocusedInput] = useState<FocusedInput | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const showProcessingToast = useShowInfoToast("Processing booking...");
-  const showNoInfoToast = useShowInfoToast("Missing email or dates.");
+  const showNoInfoToast = useShowInfoToast("Missing valid email or dates.");
+
+  const emailRegex = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+  const isValidEmail = emailRegex.test(email);
+  const isEmailError = email.length > 0 && !isValidEmail;
+  const isFormValid = isValidEmail && dateRange[0] !== null && dateRange[1] !== null;
 
   function handleSubmit(evt: React.MouseEvent<HTMLButtonElement>) {
-    if (!email || !dateRange[0] || !dateRange[1]) {
+    if (!isFormValid) {
       showNoInfoToast();
       evt.preventDefault();
       return false;
     }
 
+    if (isSubmitting) {
+      evt.preventDefault();
+      return false;
+    }
+
+    setIsSubmitting(true);
     showProcessingToast();
     onSubmit({
       RoomNumber: roomNumber,
       GuestEmail: email,
-      Start: fromDateStringToIso(dateRange[0]),
-      End: fromDateStringToIso(dateRange[1]),
+      Start: dateRange[0],
+      End: dateRange[1],
     });
+    
     return true;
   }
 
@@ -101,6 +113,7 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         type="email"
         size="3"
         mb="4"
+        color={isEmailError ? "red" : undefined}
       >
         <DimSlot side="left" prefix="email">
           Email
@@ -119,10 +132,17 @@ function BookingForm({ roomNumber, onSubmit }: BookingFormProps) {
         focusedInput={focusedInput}
         onFocusChange={setFocusedInput}
         showResetDates={false}
+        minBookingDate={new Date()}
       />
       <BottomRightBox>
         <Dialog.Close>
-          <Button size="3" color="mint" mt="4" onClick={handleSubmit}>
+          <Button 
+            size="3" 
+            color="mint" 
+            mt="4" 
+            onClick={handleSubmit} 
+            disabled={isSubmitting || !isFormValid}
+          >
             Reserve
           </Button>
         </Dialog.Close>

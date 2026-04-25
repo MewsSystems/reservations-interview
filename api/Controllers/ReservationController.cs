@@ -1,24 +1,50 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
 using Repositories;
+using Repositories.Interfaces;
+using Validators;
+using Validators.Interfaces;
 
 namespace Controllers
 {
     [Tags("Reservations"), Route("reservation")]
+    [ApiController]
     public class ReservationController : Controller
     {
-        private ReservationRepository _repo { get; set; }
+        private readonly IReservationRepository _reservationRepo;
+        private readonly IRoomRepository _roomRepo;
+        private readonly IGuestRepository _guestRepo;
+        private readonly IReservationValidator _reservationValidator;
 
-        public ReservationController(ReservationRepository reservationRepository)
+        private static readonly Regex EmailRegex = new Regex(
+            @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+            RegexOptions.Compiled
+        );
+        private static readonly Regex RoomNumberRegex = new Regex(
+            @"^[0-9](0[1-9]|[1-9][0-9])$",
+            RegexOptions.Compiled
+        );
+        private static readonly string[] error = new[] { "Request payload is missing or invalid." };
+
+        public ReservationController(
+            IReservationRepository reservationRepository,
+            IRoomRepository roomRepository,
+            IGuestRepository guestRepository,
+            IReservationValidator reservationValidator
+        )
         {
-            _repo = reservationRepository;
+            _reservationRepo = reservationRepository;
+            _roomRepo = roomRepository;
+            _guestRepo = guestRepository;
+            _reservationValidator = reservationValidator;
         }
 
         [HttpGet, Produces("application/json"), Route("")]
         public async Task<ActionResult<Reservation>> GetReservations()
         {
-            var reservations = await _repo.GetReservations();
+            var reservations = await _reservationRepo.GetReservations();
 
             return Json(reservations);
         }
@@ -28,7 +54,7 @@ namespace Controllers
         {
             try
             {
-                var reservation = await _repo.GetReservation(reservationId);
+                var reservation = await _reservationRepo.GetReservation(reservationId);
                 return Json(reservation);
             }
             catch (NotFoundException)
@@ -47,6 +73,42 @@ namespace Controllers
             [FromBody] Reservation newBooking
         )
         {
+            if (newBooking == null)
+            {
+                return BadRequest(new { errors = error });
+            }
+
+            var validationErrors = _reservationValidator.Validate(newBooking);
+            if (validationErrors.Any())
+            {
+                return BadRequest(new { errors = validationErrors });
+            }
+
+            // Verify room exists
+            try
+            {
+                await _roomRepo.GetRoom(newBooking.RoomNumber);
+            }
+            catch (NotFoundException)
+            {
+                return BadRequest(new { errors = new[] { "Room does not exist." } });
+            }
+
+            try
+            {
+                await _guestRepo.GetGuestByEmail(newBooking.GuestEmail);
+            }
+            catch (NotFoundException)
+            {
+                await _guestRepo.CreateGuest(
+                    new Guest
+                    {
+                        Email = newBooking.GuestEmail,
+                        Name = string.Empty,
+                    }
+                );
+            }
+
             // Provide a real ID if one is not provided
             if (newBooking.Id == Guid.Empty)
             {
@@ -55,8 +117,12 @@ namespace Controllers
 
             try
             {
-                var createdReservation = await _repo.CreateReservation(newBooking);
-                return Created($"/reservation/${createdReservation.Id}", createdReservation);
+                var createdReservation = await _reservationRepo.CreateReservation(newBooking);
+                return Created($"/reservation/{createdReservation.Id}", createdReservation);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { errors = new[] { ex.Message } });
             }
             catch (Exception ex)
             {
@@ -70,7 +136,7 @@ namespace Controllers
         [HttpDelete, Produces("application/json"), Route("{reservationId}")]
         public async Task<IActionResult> DeleteReservation(Guid reservationId)
         {
-            var result = await _repo.DeleteReservation(reservationId);
+            var result = await _reservationRepo.DeleteReservation(reservationId);
 
             return result ? NoContent() : NotFound();
         }
