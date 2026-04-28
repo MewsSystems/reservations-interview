@@ -1,1 +1,11 @@
 .DS_Store
+
+# Copilot plan snapshots
+.copilot/
+.vs/CopilotSnapshots
+
+# .NET build outputs
+*.dll
+bin/
+obj/
+/.vs

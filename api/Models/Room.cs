@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Models.Errors;
 
 namespace Models
@@ -27,6 +28,16 @@ namespace Models
         public static string FormatRoomNumber(int number)
         {
             return number.ToString().PadLeft(3, '0');
+        }
+
+        /// <summary>
+        /// Validates that a room number string matches the "###" format:
+        /// - Exactly three digits
+        /// - Door portion (last two digits) cannot be "00"
+        /// </summary>
+        public static bool IsValidRoomNumber(string roomNumber)
+        {
+            return Regex.IsMatch(roomNumber, @"^\d{3}$") && !roomNumber.EndsWith("00");
         }
 
         public static int ConvertRoomNumberToInt(string roomNumber)

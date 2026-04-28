@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Models;
 using Models.Errors;
@@ -5,7 +6,7 @@ using Repositories;
 
 namespace Controllers
 {
-    [Tags("Rooms"), Route("room")]
+    [Tags("Rooms"), Route("room"), Authorize(Policy = "StaffOnly")]
     public class RoomController : Controller
     {
         private RoomRepository _repo { get; set; }
@@ -31,9 +32,9 @@ namespace Controllers
         [HttpGet, Produces("application/json"), Route("{roomNumber}")]
         public async Task<ActionResult<Room>> GetRoom(string roomNumber)
         {
-            if (roomNumber.Length != 3)
+            if (!Room.IsValidRoomNumber(roomNumber))
             {
-                return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
+                return BadRequest("Invalid room ID - must be exactly 3 digits and the last two digits cannot be 00 (e.g. 101, 202).");
             }
 
             try
@@ -51,6 +52,11 @@ namespace Controllers
         [HttpPost, Produces("application/json"), Route("")]
         public async Task<ActionResult<Room>> CreateRoom([FromBody] Room newRoom)
         {
+            if (!Room.IsValidRoomNumber(newRoom.Number))
+            {
+                return BadRequest("Invalid room ID - must be exactly 3 digits and the last two digits cannot be 00 (e.g. 101, 202).");
+            }
+
             var createdRoom = await _repo.CreateRoom(newRoom);
 
             if (createdRoom == null)
@@ -64,14 +70,40 @@ namespace Controllers
         [HttpDelete, Produces("application/json"), Route("{roomNumber}")]
         public async Task<IActionResult> DeleteRoom(string roomNumber)
         {
-            if (roomNumber.Length != 3)
+            if (!Room.IsValidRoomNumber(roomNumber))
             {
-                return BadRequest("Invalid room ID - format is ###, ex 001 / 002 / 101");
+                return BadRequest("Invalid room ID - must be exactly 3 digits and the last two digits cannot be 00 (e.g. 101, 202).");
             }
 
             var deleted = await _repo.DeleteRoom(roomNumber);
 
             return deleted ? NoContent() : NotFound();
         }
+
+        [HttpPut, Produces("application/json"), Route("{roomNumber}/state")]
+        public async Task<IActionResult> SetRoomState(string roomNumber, [FromBody] SetRoomStateRequest? request)
+        {
+            if (!Room.IsValidRoomNumber(roomNumber))
+            {
+                return BadRequest("Invalid room ID - must be exactly 3 digits and the last two digits cannot be 00 (e.g. 101, 202).");
+            }
+
+            if (request is null)
+            {
+                return BadRequest("Invalid payload.");
+            }
+
+            try
+            {
+                await _repo.SetRoomState(roomNumber, request.State);
+                return NoContent();
+            }
+            catch (NotFoundException)
+            {
+                return NotFound();
+            }
+        }
     }
+
+    public record SetRoomStateRequest(Models.State State);
 }

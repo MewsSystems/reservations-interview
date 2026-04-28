@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using Models;
 using Models.Errors;
+using Validators;
 
 namespace Repositories
 {
@@ -26,6 +27,18 @@ namespace Repositories
             return reservations.Select(r => r.ToDomain());
         }
 
+        public async Task<IEnumerable<Reservation>> GetUpcomingReservations()
+        {
+            var today = DateTime.UtcNow.Date;
+
+            var reservations = await _db.QueryAsync<ReservationDb>(
+                "SELECT * FROM Reservations WHERE End >= @today ORDER BY Start ASC;",
+                new { today }
+            );
+
+            return reservations?.Select(r => r.ToDomain()) ?? [];
+        }
+
         /// <summary>
         /// Find a reservation by its Guid ID, throwing if not found
         /// </summary>
@@ -41,7 +54,7 @@ namespace Repositories
 
             if (reservation == null)
             {
-                throw new NotFoundException($"Room {reservationId} not found");
+                throw new NotFoundException($"Reservation {reservationId} not found");
             }
 
             return reservation.ToDomain();
@@ -49,10 +62,37 @@ namespace Repositories
 
         public async Task<Reservation> CreateReservation(Reservation newReservation)
         {
-            // TODO Implement
-            return await Task.FromResult(
-                new Reservation { RoomNumber = "000", GuestEmail = "todo" }
+            await CheckForConflict(newReservation);
+
+            var db = new ReservationDb(newReservation);
+
+            var created = await _db.QuerySingleAsync<ReservationDb>(
+                @"INSERT INTO Reservations (Id, GuestEmail, RoomNumber, Start, End, CheckedIn, CheckedOut)
+                  VALUES (@Id, @GuestEmail, @RoomNumber, @Start, @End, @CheckedIn, @CheckedOut)
+                  RETURNING *;",
+                db
             );
+
+            return created.ToDomain();
+        }
+
+        private async Task CheckForConflict(Reservation newReservation)
+        {
+            var conflict = await _db.QueryFirstOrDefaultAsync<ReservationDb>(
+                @"SELECT * FROM Reservations
+                  WHERE RoomNumber = @RoomNumber
+                  AND Start < @End
+                  AND End > @Start
+                  LIMIT 1;",
+                new
+                {
+                    RoomNumber = Room.ConvertRoomNumberToInt(newReservation.RoomNumber),
+                    newReservation.Start,
+                    newReservation.End
+                }
+            );
+
+            ReservationConflictValidator.ValidateNoConflict(newReservation, conflict != null);
         }
 
         public async Task<bool> DeleteReservation(Guid reservationId)
@@ -63,6 +103,89 @@ namespace Repositories
             );
 
             return deleted > 0;
+        }
+
+        public async Task<Reservation> CheckIn(Guid reservationId, string guestEmail)
+        {
+            var reservation = await GetReservation(reservationId);
+
+            if (!string.Equals(reservation.GuestEmail, guestEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Email does not match reservation.");
+            }
+
+            if (reservation.CheckedOut)
+            {
+                throw new InvalidOperationException("Reservation has already been checked out.");
+            }
+
+            if (reservation.CheckedIn)
+            {
+                throw new InvalidOperationException("Reservation is already checked in.");
+            }
+
+            var updated = await _db.QuerySingleAsync<ReservationDb>(
+                "UPDATE Reservations SET CheckedIn = 1 WHERE Id = @id RETURNING *;",
+                new { id = reservationId.ToString() }
+            );
+
+            return updated.ToDomain();
+        }
+
+        /// <summary>
+        /// Validates the check-in conditions against the already-loaded <paramref name="reservation"/>,
+        /// then atomically marks the reservation as checked-in and sets the room state to Occupied
+        /// inside a single transaction, avoiding partial-update inconsistencies.
+        /// </summary>
+        public async Task<Reservation> CheckInWithRoomUpdate(Reservation reservation, string guestEmail)
+        {
+            if (!string.Equals(reservation.GuestEmail, guestEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Email does not match reservation.");
+            }
+
+            if (reservation.CheckedOut)
+            {
+                throw new InvalidOperationException("Reservation has already been checked out.");
+            }
+
+            if (reservation.CheckedIn)
+            {
+                throw new InvalidOperationException("Reservation is already checked in.");
+            }
+
+            if (_db.State != System.Data.ConnectionState.Open)
+            {
+                _db.Open();
+            }
+
+            using var tx = _db.BeginTransaction();
+
+            try
+            {
+                var updated = await _db.QuerySingleAsync<ReservationDb>(
+                    "UPDATE Reservations SET CheckedIn = 1 WHERE Id = @id RETURNING *;",
+                    new { id = reservation.Id.ToString() },
+                    tx
+                );
+                var roomNumberInt = Room.ConvertRoomNumberToInt(reservation.RoomNumber);
+                var updatedRooms = await _db.ExecuteAsync(
+                           "UPDATE Rooms SET State = @state WHERE Number = @roomNumberInt;",
+                           new { state = Models.State.Occupied, roomNumberInt },
+                           tx
+                       );
+                if (updatedRooms != 1)
+                {
+                    throw new InvalidOperationException("Room update failed for reservation check-in.");
+                }
+                tx.Commit();
+                return updated.ToDomain();
+            }
+            catch
+            {
+                tx.Rollback();
+                throw;
+            }
         }
 
         private class ReservationDb

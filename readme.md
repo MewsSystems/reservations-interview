@@ -101,6 +101,12 @@ caddy adapt
 
 Caddy's doc say to run `caddy adapt`, so that was included in the above code block.
 
+### Local Secrets
+
+The app requires a staff access code to be configured locally. Go to api and run the following command in the terminal to set it:
+dotnet user-secrets init
+dotnet user-secrets set "staffAccessCode" "[YOUR-PASS]"
+
 With all that done, run the start shell script at the root of this repository to initiate
 the api (dotnet), the router (caddy), and the ui (rspack dev server).
 
